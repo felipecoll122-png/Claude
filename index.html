@@ -9,7 +9,10 @@
 <meta name="theme-color" content="#1a1a19" media="(prefers-color-scheme: dark)" />
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
-<link rel="apple-touch-icon" href="icons/icon.svg" />
+<link rel="apple-touch-icon" href="icons/icon-180.png" />
+<link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png" />
+<link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Mis Gastos" />
@@ -44,6 +47,20 @@
       <div class="hero-label">Total gastado</div>
       <div id="heroTotal" class="hero-figure">$0</div>
       <div id="heroDelta" class="hero-delta"></div>
+    </section>
+
+    <!-- Budget -->
+    <section class="card viz-root">
+      <h2 class="card-title">Presupuesto del mes</h2>
+      <div id="budgetContent">
+        <div class="budget-row">
+          <span id="budgetSpent" class="budget-amount"></span>
+          <span id="budgetTotal" class="budget-total"></span>
+        </div>
+        <div class="budget-track"><div id="budgetFill" class="budget-fill"></div></div>
+        <div id="budgetStatus" class="budget-status"></div>
+      </div>
+      <p id="budgetEmpty" class="empty-state" hidden>Todavía no configuraste un presupuesto mensual. Andá a Configuración (⚙️) para agregarlo.</p>
     </section>
 
     <!-- Category breakdown -->
@@ -111,6 +128,18 @@
     <label class="field-label" for="currencySelect">Moneda</label>
     <select id="currencySelect"></select>
   </div>
+  <div class="field-group">
+    <label class="field-label" for="budgetInput">Presupuesto mensual</label>
+    <div class="amount-field-inline">
+      <span class="currency-prefix-sm" id="budgetCurrencyPrefix">$</span>
+      <input type="number" id="budgetInput" inputmode="decimal" min="0" step="1" placeholder="Sin definir" />
+    </div>
+    <p class="field-hint">No incluye Ahorro ni Inversiones.</p>
+  </div>
+  <div class="field-group">
+    <label class="field-label">Gastos recurrentes</label>
+    <button type="button" id="openRecurringBtn" class="btn btn-ghost full">Gestionar gastos recurrentes</button>
+  </div>
   <div class="field-group danger-zone">
     <label class="field-label">Datos</label>
     <button type="button" id="exportBtn" class="btn btn-ghost full">Exportar datos (JSON)</button>
@@ -119,6 +148,51 @@
   <div class="sheet-actions">
     <button type="button" id="closeSettingsBtn" class="btn btn-primary full">Listo</button>
   </div>
+</div>
+
+<!-- Recurring list sheet -->
+<div id="recurringOverlay" class="overlay" hidden></div>
+<div id="recurringSheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="recurringTitle" hidden>
+  <div class="sheet-handle"></div>
+  <h2 id="recurringTitle" class="sheet-title">Gastos recurrentes</h2>
+  <p class="field-hint" style="margin-top:-8px;">Se cargan solos como gasto cada mes, en el día que elijas.</p>
+  <div id="recurringList" class="recurring-list"></div>
+  <p id="recurringEmpty" class="empty-state" hidden>No tenés gastos recurrentes cargados.</p>
+  <div class="sheet-actions">
+    <button type="button" id="closeRecurringBtn" class="btn btn-ghost">Cerrar</button>
+    <button type="button" id="addRecurringBtn" class="btn btn-primary">+ Agregar</button>
+  </div>
+</div>
+
+<!-- Recurring add form sheet -->
+<div id="recurringFormOverlay" class="overlay" hidden></div>
+<div id="recurringFormSheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="recurringFormTitle" hidden>
+  <div class="sheet-handle"></div>
+  <h2 id="recurringFormTitle" class="sheet-title">Nuevo gasto recurrente</h2>
+  <form id="recurringForm">
+    <div class="amount-field">
+      <span class="currency-prefix" id="recurringCurrencyPrefix">$</span>
+      <input type="number" id="recurringAmountInput" inputmode="decimal" step="0.01" min="0" placeholder="0" required autocomplete="off" />
+    </div>
+    <div class="field-group">
+      <label class="field-label">Categoría</label>
+      <div id="recurringCategoryChips" class="chip-grid"></div>
+    </div>
+    <div class="field-row">
+      <div class="field-group grow">
+        <label class="field-label" for="recurringNoteInput">Nombre</label>
+        <input type="text" id="recurringNoteInput" placeholder="Ej: Cuota gym" autocomplete="off" maxlength="60" required />
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="recurringDayInput">Día del mes</label>
+        <input type="number" id="recurringDayInput" min="1" max="31" placeholder="1-31" required />
+      </div>
+    </div>
+    <div class="sheet-actions">
+      <button type="button" id="recurringCancelBtn" class="btn btn-ghost">Cancelar</button>
+      <button type="submit" class="btn btn-primary">Guardar</button>
+    </div>
+  </form>
 </div>
 
 <div id="toast" class="toast" hidden></div>

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mis-gastos-v1';
+const CACHE_NAME = 'mis-gastos-v3';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -6,6 +6,11 @@ const CORE_ASSETS = [
   './app.js',
   './manifest.webmanifest',
   './icons/icon.svg',
+  './icons/icon-180.png',
+  './icons/icon-152.png',
+  './icons/icon-167.png',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
 ];
 
 self.addEventListener('install', (event) => {
