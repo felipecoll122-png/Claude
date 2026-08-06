@@ -51,7 +51,12 @@
 
     <!-- Budget -->
     <section class="card viz-root">
-      <h2 class="card-title">Presupuesto del mes</h2>
+      <div class="card-title-row">
+        <h2 class="card-title">Presupuesto del mes</h2>
+        <button type="button" id="editBudgetBtn" class="icon-btn-sm" aria-label="Editar presupuesto">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 20h4l10.5-10.5a2 2 0 0 0 0-2.83l-1.17-1.17a2 2 0 0 0-2.83 0L4 16v4Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
       <div id="budgetContent">
         <div class="budget-row">
           <span id="budgetSpent" class="budget-amount"></span>
@@ -60,7 +65,7 @@
         <div class="budget-track"><div id="budgetFill" class="budget-fill"></div></div>
         <div id="budgetStatus" class="budget-status"></div>
       </div>
-      <p id="budgetEmpty" class="empty-state" hidden>Todavía no configuraste un presupuesto mensual. Andá a Configuración (⚙️) para agregarlo.</p>
+      <button type="button" id="budgetEmpty" class="link-btn" hidden>+ Configurar presupuesto de este mes</button>
     </section>
 
     <!-- Category breakdown -->
@@ -112,6 +117,14 @@
       </div>
     </div>
 
+    <div class="field-group">
+      <label class="toggle-row">
+        <input type="checkbox" id="repeatToggle" />
+        <span>🔁 Repetir todos los meses</span>
+      </label>
+      <p id="repeatHint" class="field-hint" hidden>Se va a cargar solo, cada mes, el día <strong id="repeatDay"></strong>.</p>
+    </div>
+
     <div class="sheet-actions">
       <button type="button" id="cancelBtn" class="btn btn-ghost">Cancelar</button>
       <button type="submit" class="btn btn-primary">Guardar</button>
@@ -129,16 +142,13 @@
     <select id="currencySelect"></select>
   </div>
   <div class="field-group">
-    <label class="field-label" for="budgetInput">Presupuesto mensual</label>
-    <div class="amount-field-inline">
-      <span class="currency-prefix-sm" id="budgetCurrencyPrefix">$</span>
-      <input type="number" id="budgetInput" inputmode="decimal" min="0" step="1" placeholder="Sin definir" />
-    </div>
-    <p class="field-hint">No incluye Ahorro ni Inversiones.</p>
+    <label class="field-label">Presupuesto</label>
+    <p class="field-hint" style="margin-top:0;">Se edita tocando el lápiz ✏️ en la tarjeta de presupuesto del dashboard.</p>
   </div>
   <div class="field-group">
     <label class="field-label">Gastos recurrentes</label>
-    <button type="button" id="openRecurringBtn" class="btn btn-ghost full">Gestionar gastos recurrentes</button>
+    <button type="button" id="openRecurringBtn" class="btn btn-ghost full">Ver gastos recurrentes</button>
+    <p class="field-hint">Para agregar uno nuevo, cargá un gasto y activá "Repetir todos los meses".</p>
   </div>
   <div class="field-group danger-zone">
     <label class="field-label">Datos</label>
@@ -164,32 +174,30 @@
   </div>
 </div>
 
-<!-- Recurring add form sheet -->
-<div id="recurringFormOverlay" class="overlay" hidden></div>
-<div id="recurringFormSheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="recurringFormTitle" hidden>
+<!-- Budget edit sheet -->
+<div id="budgetOverlay" class="overlay" hidden></div>
+<div id="budgetSheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="budgetSheetTitle" hidden>
   <div class="sheet-handle"></div>
-  <h2 id="recurringFormTitle" class="sheet-title">Nuevo gasto recurrente</h2>
-  <form id="recurringForm">
+  <h2 id="budgetSheetTitle" class="sheet-title">Presupuesto de <span id="budgetSheetMonth"></span></h2>
+  <form id="budgetForm">
     <div class="amount-field">
-      <span class="currency-prefix" id="recurringCurrencyPrefix">$</span>
-      <input type="number" id="recurringAmountInput" inputmode="decimal" step="0.01" min="0" placeholder="0" required autocomplete="off" />
+      <span class="currency-prefix" id="budgetFormCurrencyPrefix">$</span>
+      <input type="number" id="budgetFormInput" inputmode="decimal" min="0" step="1" placeholder="0" required autocomplete="off" />
     </div>
+    <p class="field-hint" style="margin-top:-14px;">No incluye Ahorro ni Inversiones.</p>
+
     <div class="field-group">
-      <label class="field-label">Categoría</label>
-      <div id="recurringCategoryChips" class="chip-grid"></div>
+      <label class="toggle-row">
+        <input type="checkbox" id="budgetApplyAllToggle" checked />
+        <span>Usar este monto todos los meses</span>
+      </label>
+      <p class="field-hint">Si lo desmarcás, va a aplicar solo a <strong id="budgetFormMonthInline"></strong>.</p>
     </div>
-    <div class="field-row">
-      <div class="field-group grow">
-        <label class="field-label" for="recurringNoteInput">Nombre</label>
-        <input type="text" id="recurringNoteInput" placeholder="Ej: Cuota gym" autocomplete="off" maxlength="60" required />
-      </div>
-      <div class="field-group">
-        <label class="field-label" for="recurringDayInput">Día del mes</label>
-        <input type="number" id="recurringDayInput" min="1" max="31" placeholder="1-31" required />
-      </div>
-    </div>
+
+    <button type="button" id="budgetRemoveOverrideBtn" class="btn btn-ghost full" hidden>Quitar presupuesto especial de este mes</button>
+
     <div class="sheet-actions">
-      <button type="button" id="recurringCancelBtn" class="btn btn-ghost">Cancelar</button>
+      <button type="button" id="budgetCancelBtn" class="btn btn-ghost">Cancelar</button>
       <button type="submit" class="btn btn-primary">Guardar</button>
     </div>
   </form>

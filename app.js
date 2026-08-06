@@ -4,18 +4,19 @@
   const STORAGE_KEY = 'expenses_v1';
   const SETTINGS_KEY = 'settings_v1';
   const RECURRING_KEY = 'recurring_v1';
+  const BUDGETS_KEY = 'budgets_v1';
 
   const CATEGORIES = [
-    { id: 'comida',      label: 'Comida',      emoji: '🍔', color: '--cat-comida' },
-    { id: 'transporte',  label: 'Transporte',  emoji: '🚗', color: '--cat-transporte' },
-    { id: 'vivienda',    label: 'Vivienda',    emoji: '🏠', color: '--cat-vivienda' },
-    { id: 'boliche',     label: 'Boliche',     emoji: '🪩', color: '--cat-boliche' },
-    { id: 'juntas',      label: 'Juntas',      emoji: '🍻', color: '--cat-juntas' },
-    { id: 'salud',       label: 'Salud',       emoji: '💊', color: '--cat-salud' },
-    { id: 'compras',     label: 'Compras',     emoji: '🛍️', color: '--cat-compras' },
-    { id: 'ahorro',      label: 'Ahorro',      emoji: '🐷', color: '--cat-ahorro' },
-    { id: 'inversiones', label: 'Inversiones', emoji: '📈', color: '--cat-inversiones' },
-    { id: 'otros',       label: 'Otros',       emoji: '📦', color: '--cat-otros' },
+    { id: 'comida',        label: 'Comida',        emoji: '🍔', color: '--cat-comida' },
+    { id: 'transporte',    label: 'Transporte',    emoji: '🚗', color: '--cat-transporte' },
+    { id: 'vivienda',      label: 'Vivienda',      emoji: '🏠', color: '--cat-vivienda' },
+    { id: 'boliche',       label: 'Boliche',       emoji: '🪩', color: '--cat-boliche' },
+    { id: 'juntas',        label: 'Juntas',        emoji: '🍻', color: '--cat-juntas' },
+    { id: 'salud',         label: 'Entrenamiento', emoji: '💪', color: '--cat-entrenamiento' },
+    { id: 'compras',       label: 'Compras',       emoji: '🛍️', color: '--cat-compras' },
+    { id: 'ahorro',        label: 'Ahorro',        emoji: '🐷', color: '--cat-ahorro' },
+    { id: 'inversiones',   label: 'Inversiones',   emoji: '📈', color: '--cat-inversiones' },
+    { id: 'otros',         label: 'Otros',         emoji: '📦', color: '--cat-otros' },
   ];
   const CATEGORY_BY_ID = Object.fromEntries(CATEGORIES.map(c => [c.id, c]));
   const BUDGET_EXCLUDED_CATEGORIES = ['ahorro', 'inversiones'];
@@ -27,9 +28,9 @@
   let expenses = loadExpenses();
   let settings = loadSettings();
   let recurring = loadRecurring();
+  let budgets = loadBudgets();
   let viewedMonth = startOfMonth(new Date());
   let selectedCategory = null;
-  let selectedRecurringCategory = null;
   let pendingDelete = null; // { expense, timeoutId } for undo
 
   function loadExpenses() {
@@ -45,8 +46,8 @@
     try {
       const raw = localStorage.getItem(SETTINGS_KEY);
       const parsed = raw ? JSON.parse(raw) : {};
-      return { currency: parsed.currency || guessCurrency(), budget: parsed.budget ?? null };
-    } catch { return { currency: guessCurrency(), budget: null }; }
+      return { currency: parsed.currency || guessCurrency() };
+    } catch { return { currency: guessCurrency() }; }
   }
   function saveSettings() {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
@@ -59,6 +60,30 @@
   }
   function saveRecurring() {
     localStorage.setItem(RECURRING_KEY, JSON.stringify(recurring));
+  }
+  function loadBudgets() {
+    try {
+      const raw = localStorage.getItem(BUDGETS_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return { default: parsed.default ?? null, overrides: parsed.overrides || {} };
+      }
+    } catch { /* fall through to migration */ }
+    // Migrate a legacy single global budget from an older version of the app.
+    try {
+      const rawSettings = localStorage.getItem(SETTINGS_KEY);
+      const parsedSettings = rawSettings ? JSON.parse(rawSettings) : {};
+      if (parsedSettings.budget > 0) return { default: parsedSettings.budget, overrides: {} };
+    } catch { /* ignore */ }
+    return { default: null, overrides: {} };
+  }
+  function saveBudgets() {
+    localStorage.setItem(BUDGETS_KEY, JSON.stringify(budgets));
+  }
+  function getBudgetForMonth(monthDate) {
+    const key = monthKey(monthDate);
+    if (budgets.overrides[key] > 0) return budgets.overrides[key];
+    return budgets.default > 0 ? budgets.default : null;
   }
   function guessCurrency() {
     const region = (navigator.language || 'en-US').split('-')[1];
@@ -143,6 +168,7 @@
   const budgetTotalEl = document.getElementById('budgetTotal');
   const budgetFill = document.getElementById('budgetFill');
   const budgetStatus = document.getElementById('budgetStatus');
+  const editBudgetBtn = document.getElementById('editBudgetBtn');
 
   const overlay = document.getElementById('overlay');
   const sheet = document.getElementById('sheet');
@@ -152,26 +178,28 @@
   const dateInput = document.getElementById('dateInput');
   const categoryChips = document.getElementById('categoryChips');
   const currencyPrefix = document.getElementById('currencyPrefix');
+  const repeatToggle = document.getElementById('repeatToggle');
+  const repeatHint = document.getElementById('repeatHint');
+  const repeatDay = document.getElementById('repeatDay');
 
   const settingsOverlay = document.getElementById('settingsOverlay');
   const settingsSheet = document.getElementById('settingsSheet');
   const currencySelect = document.getElementById('currencySelect');
-  const budgetInput = document.getElementById('budgetInput');
-  const budgetCurrencyPrefix = document.getElementById('budgetCurrencyPrefix');
 
   const recurringOverlay = document.getElementById('recurringOverlay');
   const recurringSheetEl = document.getElementById('recurringSheet');
   const recurringList = document.getElementById('recurringList');
   const recurringEmpty = document.getElementById('recurringEmpty');
 
-  const recurringFormOverlay = document.getElementById('recurringFormOverlay');
-  const recurringFormSheet = document.getElementById('recurringFormSheet');
-  const recurringForm = document.getElementById('recurringForm');
-  const recurringAmountInput = document.getElementById('recurringAmountInput');
-  const recurringNoteInput = document.getElementById('recurringNoteInput');
-  const recurringDayInput = document.getElementById('recurringDayInput');
-  const recurringCategoryChips = document.getElementById('recurringCategoryChips');
-  const recurringCurrencyPrefix = document.getElementById('recurringCurrencyPrefix');
+  const budgetOverlay = document.getElementById('budgetOverlay');
+  const budgetSheet = document.getElementById('budgetSheet');
+  const budgetForm = document.getElementById('budgetForm');
+  const budgetSheetMonth = document.getElementById('budgetSheetMonth');
+  const budgetFormMonthInline = document.getElementById('budgetFormMonthInline');
+  const budgetFormInput = document.getElementById('budgetFormInput');
+  const budgetFormCurrencyPrefix = document.getElementById('budgetFormCurrencyPrefix');
+  const budgetApplyAllToggle = document.getElementById('budgetApplyAllToggle');
+  const budgetRemoveOverrideBtn = document.getElementById('budgetRemoveOverrideBtn');
 
   // ---------- Rendering ----------
 
@@ -210,8 +238,8 @@
   }
 
   function renderBudget(monthExpenses) {
-    const budget = settings.budget;
-    if (!budget || budget <= 0) {
+    const budget = getBudgetForMonth(viewedMonth);
+    if (!budget) {
       budgetContent.hidden = true;
       budgetEmpty.hidden = false;
       return;
@@ -326,7 +354,7 @@
     render();
   });
 
-  // ---------- Category chips (shared by expense form & recurring form) ----------
+  // ---------- Category chips ----------
 
   function buildCategoryChipsInto(container, onSelect) {
     container.innerHTML = '';
@@ -348,20 +376,31 @@
     });
   }
 
-  // ---------- Add-expense sheet ----------
+  // ---------- Add-expense sheet (also handles creating a recurring template) ----------
 
   function selectCategory(id) {
     selectedCategory = id;
     selectChipIn(categoryChips, id);
   }
 
-  function openSheet() {
+  function updateRepeatHint() {
+    if (!repeatToggle.checked) { repeatHint.hidden = true; return; }
+    const d = new Date((dateInput.value || toISODate(new Date())) + 'T00:00:00');
+    repeatDay.textContent = d.getDate();
+    repeatHint.hidden = false;
+  }
+  repeatToggle.addEventListener('change', updateRepeatHint);
+  dateInput.addEventListener('change', updateRepeatHint);
+
+  function openSheet(opts = {}) {
     currencyPrefix.textContent = currencySymbol();
     amountInput.value = '';
     noteInput.value = '';
     dateInput.value = toISODate(new Date());
     dateInput.max = toISODate(new Date());
     selectCategory(CATEGORIES[0].id);
+    repeatToggle.checked = !!opts.presetRepeat;
+    updateRepeatHint();
     overlay.hidden = false;
     sheet.hidden = false;
     document.body.style.overflow = 'hidden';
@@ -373,7 +412,7 @@
     document.body.style.overflow = '';
   }
 
-  document.getElementById('fab').addEventListener('click', openSheet);
+  document.getElementById('fab').addEventListener('click', () => openSheet());
   document.getElementById('cancelBtn').addEventListener('click', closeSheet);
   overlay.addEventListener('click', closeSheet);
 
@@ -383,21 +422,37 @@
     if (!amount || amount <= 0) { amountInput.focus(); return; }
     if (!selectedCategory) return;
 
+    const savedDate = dateInput.value || toISODate(new Date());
+    const note = noteInput.value.trim().slice(0, 60);
+
+    let recurringId = null;
+    if (repeatToggle.checked) {
+      recurringId = uid();
+      recurring.push({
+        id: recurringId,
+        amount,
+        category: selectedCategory,
+        note,
+        dayOfMonth: new Date(savedDate + 'T00:00:00').getDate(),
+      });
+      saveRecurring();
+    }
+
     expenses.push({
       id: uid(),
       amount,
       category: selectedCategory,
-      note: noteInput.value.trim().slice(0, 60),
-      date: dateInput.value || toISODate(new Date()),
+      note,
+      date: savedDate,
+      recurringId,
     });
     saveExpenses();
 
-    const savedDate = dateInput.value;
     if (!isInMonth(savedDate, viewedMonth)) viewedMonth = startOfMonth(new Date(savedDate + 'T00:00:00'));
 
     closeSheet();
     render();
-    showToast('Gasto guardado');
+    showToast(recurringId ? 'Gasto guardado · se repite cada mes' : 'Gasto guardado');
   });
 
   // ---------- Delete with undo ----------
@@ -459,17 +514,8 @@
     render();
   });
 
-  budgetInput.addEventListener('change', () => {
-    const val = parseFloat(budgetInput.value);
-    settings.budget = val > 0 ? val : null;
-    saveSettings();
-    render();
-  });
-
   function openSettings() {
     buildCurrencyOptions();
-    budgetCurrencyPrefix.textContent = currencySymbol();
-    budgetInput.value = settings.budget || '';
     settingsOverlay.hidden = false;
     settingsSheet.hidden = false;
     document.body.style.overflow = 'hidden';
@@ -502,7 +548,7 @@
     showToast('Se borraron todos los gastos');
   });
 
-  // ---------- Recurring expenses UI ----------
+  // ---------- Recurring expenses list (management only — created via the expense form) ----------
 
   function renderRecurringList() {
     recurringList.innerHTML = '';
@@ -552,60 +598,70 @@
   document.getElementById('closeRecurringBtn').addEventListener('click', closeRecurringSheet);
   recurringOverlay.addEventListener('click', closeRecurringSheet);
 
-  function selectRecurringCategory(id) {
-    selectedRecurringCategory = id;
-    selectChipIn(recurringCategoryChips, id);
-  }
+  document.getElementById('addRecurringBtn').addEventListener('click', () => {
+    closeRecurringSheet();
+    openSheet({ presetRepeat: true });
+  });
 
-  function openRecurringForm() {
-    recurringCurrencyPrefix.textContent = currencySymbol();
-    recurringAmountInput.value = '';
-    recurringNoteInput.value = '';
-    recurringDayInput.value = '';
-    selectRecurringCategory(CATEGORIES[0].id);
-    recurringFormOverlay.hidden = false;
-    recurringFormSheet.hidden = false;
-    setTimeout(() => recurringAmountInput.focus(), 50);
-  }
-  function closeRecurringForm() {
-    recurringFormOverlay.hidden = true;
-    recurringFormSheet.hidden = true;
-  }
-  document.getElementById('addRecurringBtn').addEventListener('click', openRecurringForm);
-  document.getElementById('recurringCancelBtn').addEventListener('click', closeRecurringForm);
-  recurringFormOverlay.addEventListener('click', closeRecurringForm);
+  // ---------- Budget edit sheet ----------
 
-  recurringForm.addEventListener('submit', (ev) => {
+  function openBudgetSheet() {
+    const mKey = monthKey(viewedMonth);
+    const hasOverride = budgets.overrides[mKey] > 0;
+    const label = formatMonthLabel(viewedMonth);
+
+    budgetSheetMonth.textContent = label;
+    budgetFormMonthInline.textContent = label;
+    budgetFormCurrencyPrefix.textContent = currencySymbol();
+    budgetFormInput.value = getBudgetForMonth(viewedMonth) || '';
+    budgetApplyAllToggle.checked = !hasOverride;
+    budgetRemoveOverrideBtn.hidden = !hasOverride;
+
+    budgetOverlay.hidden = false;
+    budgetSheet.hidden = false;
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => budgetFormInput.focus(), 50);
+  }
+  function closeBudgetSheet() {
+    budgetOverlay.hidden = true;
+    budgetSheet.hidden = true;
+    document.body.style.overflow = '';
+  }
+  editBudgetBtn.addEventListener('click', openBudgetSheet);
+  budgetEmpty.addEventListener('click', openBudgetSheet);
+  document.getElementById('budgetCancelBtn').addEventListener('click', closeBudgetSheet);
+  budgetOverlay.addEventListener('click', closeBudgetSheet);
+
+  budgetForm.addEventListener('submit', (ev) => {
     ev.preventDefault();
-    const amount = parseFloat(recurringAmountInput.value);
-    const day = parseInt(recurringDayInput.value, 10);
-    const name = recurringNoteInput.value.trim().slice(0, 60);
-    if (!amount || amount <= 0) { recurringAmountInput.focus(); return; }
-    if (!name) { recurringNoteInput.focus(); return; }
-    if (!day || day < 1 || day > 31) { recurringDayInput.focus(); return; }
-    if (!selectedRecurringCategory) return;
+    const val = parseFloat(budgetFormInput.value);
+    const mKey = monthKey(viewedMonth);
 
-    recurring.push({
-      id: uid(),
-      amount,
-      category: selectedRecurringCategory,
-      note: name,
-      dayOfMonth: day,
-    });
-    saveRecurring();
-    generateDueRecurringExpenses();
-
-    closeRecurringForm();
-    renderRecurringList();
+    if (budgetApplyAllToggle.checked) {
+      budgets.default = val > 0 ? val : null;
+      delete budgets.overrides[mKey];
+    } else {
+      if (val > 0) budgets.overrides[mKey] = val;
+      else delete budgets.overrides[mKey];
+    }
+    saveBudgets();
+    closeBudgetSheet();
     render();
-    showToast('Gasto recurrente guardado');
+    showToast('Presupuesto guardado');
+  });
+
+  budgetRemoveOverrideBtn.addEventListener('click', () => {
+    delete budgets.overrides[monthKey(viewedMonth)];
+    saveBudgets();
+    closeBudgetSheet();
+    render();
+    showToast('Vuelve a usar el presupuesto habitual');
   });
 
   // ---------- Init ----------
 
   generateDueRecurringExpenses();
   buildCategoryChipsInto(categoryChips, selectCategory);
-  buildCategoryChipsInto(recurringCategoryChips, selectRecurringCategory);
   render();
 
   if ('serviceWorker' in navigator) {

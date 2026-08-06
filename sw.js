@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mis-gastos-v3';
+const CACHE_NAME = 'mis-gastos-v4';
 const CORE_ASSETS = [
   './',
   './index.html',
