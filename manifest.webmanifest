@@ -1,0 +1,15 @@
+{
+  "name": "Mis Gastos",
+  "short_name": "Mis Gastos",
+  "description": "Registrá tus gastos en segundos y mirá en qué se te va la plata.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f9f9f7",
+  "theme_color": "#2a78d6",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
