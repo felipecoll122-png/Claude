@@ -1,7 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#2a78d6"/>
-  <rect x="96" y="176" width="320" height="208" rx="28" fill="#ffffff"/>
-  <path d="M96 204c0-15.5 12.5-28 28-28h248a28 28 0 0 1 28 28v20H96v-20z" fill="#e9f1fc"/>
-  <circle cx="356" cy="280" r="34" fill="#eda100"/>
-  <text x="356" y="292" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="34" font-weight="700" fill="#ffffff" text-anchor="middle">$</text>
+  <rect width="512" height="512" rx="112" fill="#6d43e0"/>
+  <g stroke="#ffffff" stroke-width="26" stroke-linecap="round">
+    <line x1="128" y1="256" x2="384" y2="256"/>
+    <rect x="96" y="196" width="48" height="120" rx="16" fill="#ffffff" stroke="none"/>
+    <rect x="368" y="196" width="48" height="120" rx="16" fill="#ffffff" stroke="none"/>
+    <rect x="64" y="222" width="26" height="68" rx="10" fill="#ffffff" stroke="none"/>
+    <rect x="422" y="222" width="26" height="68" rx="10" fill="#ffffff" stroke="none"/>
+  </g>
 </svg>

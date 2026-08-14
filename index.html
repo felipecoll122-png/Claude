@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Mis Gastos</title>
-<meta name="description" content="Registrá tus gastos en segundos y mirá en qué se te va la plata." />
+<title>Mi Rutina</title>
+<meta name="description" content="Registrá tus entrenamientos, pesos y repeticiones desde el celular. Importá rutinas pegando el mensaje de WhatsApp." />
 <meta name="theme-color" content="#fcfcfb" media="(prefers-color-scheme: light)" />
-<meta name="theme-color" content="#1a1a19" media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content="#111110" media="(prefers-color-scheme: dark)" />
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="icons/icon-180.png" />
@@ -15,7 +15,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="Mis Gastos" />
+<meta name="apple-mobile-web-app-title" content="Mi Rutina" />
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -23,7 +23,7 @@
 <div class="app">
 
   <header class="topbar">
-    <h1>Mis Gastos</h1>
+    <h1>Mi Rutina</h1>
     <button id="settingsBtn" class="icon-btn" aria-label="Configuración" aria-haspopup="dialog">
       <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 13.5a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V19.5a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H4.5a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H10.5a1.65 1.65 0 0 0 1-1.51V4.5a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V10.5a1.65 1.65 0 0 0 1.51 1H19.5a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>
     </button>
@@ -31,105 +31,131 @@
 
   <main class="content">
 
-    <!-- Month switcher -->
-    <div class="month-switch">
-      <button id="prevMonth" class="icon-btn" aria-label="Mes anterior">
-        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
-      <span id="monthLabel" class="month-label">Agosto 2026</span>
-      <button id="nextMonth" class="icon-btn" aria-label="Mes siguiente">
-        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
-    </div>
-
     <!-- Hero stat -->
     <section class="hero-tile viz-root">
-      <div class="hero-label">Total gastado</div>
-      <div id="heroTotal" class="hero-figure">$0</div>
+      <div class="hero-label">Entrenamientos este mes</div>
+      <div id="heroCount" class="hero-figure">0</div>
       <div id="heroDelta" class="hero-delta"></div>
     </section>
 
-    <!-- Budget -->
+    <!-- Routines -->
     <section class="card viz-root">
       <div class="card-title-row">
-        <h2 class="card-title">Presupuesto del mes</h2>
-        <button type="button" id="editBudgetBtn" class="icon-btn-sm" aria-label="Editar presupuesto">
-          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 20h4l10.5-10.5a2 2 0 0 0 0-2.83l-1.17-1.17a2 2 0 0 0-2.83 0L4 16v4Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <h2 class="card-title">Rutinas</h2>
+        <button type="button" id="importWhatsappBtn" class="icon-btn-sm" aria-label="Importar rutina de WhatsApp">
+          <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2Z" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8.5 8.7c.2-.5.4-.5.6-.5h.5c.15 0 .35 0 .5.4.2.5.65 1.7.7 1.85.05.15.1.3 0 .5-.1.2-.15.3-.3.45-.15.15-.3.3-.15.55.15.25.7 1.1 1.5 1.8.9.8 1.5 1.05 1.75 1.2.25.15.4.1.55-.05.15-.2.65-.75.8-1 .15-.25.3-.2.5-.1.2.05 1.3.6 1.5.7.2.1.35.15.4.25.05.15.05.75-.2 1.4-.25.65-1.35 1.2-1.85 1.25-.5.05-1.1.1-3.5-.75-2.9-1.05-4.75-3.95-4.9-4.15-.15-.2-1.15-1.55-1.15-2.95 0-1.4.7-2.05.95-2.35Z" fill="currentColor" stroke="none"/></svg>
         </button>
       </div>
-      <div id="budgetContent">
-        <div class="budget-row">
-          <span id="budgetSpent" class="budget-amount"></span>
-          <span id="budgetTotal" class="budget-total"></span>
-        </div>
-        <div class="budget-track"><div id="budgetFill" class="budget-fill"></div></div>
-        <div id="budgetStatus" class="budget-status"></div>
+      <div id="routinesList" class="routines-list"></div>
+      <p id="routinesEmpty" class="empty-state" hidden>Todavía no tenés rutinas. Creá una o importala de WhatsApp.</p>
+      <button type="button" id="newRoutineBtn" class="link-btn">+ Nueva rutina</button>
+    </section>
+
+    <!-- Progress -->
+    <section class="card viz-root">
+      <div class="card-title-row">
+        <h2 class="card-title">Progreso</h2>
+        <select id="progressExerciseSelect" class="inline-select" hidden></select>
       </div>
-      <button type="button" id="budgetEmpty" class="link-btn" hidden>+ Configurar presupuesto de este mes</button>
+      <div id="progressChart" class="bar-chart"></div>
+      <p id="progressEmpty" class="empty-state">Registrá entrenamientos para ver tu progreso por ejercicio.</p>
     </section>
 
-    <!-- Category breakdown -->
+    <!-- History -->
     <section class="card viz-root">
-      <h2 class="card-title">Por categoría</h2>
-      <div id="categoryChart" class="bar-chart"></div>
-      <p id="emptyCategories" class="empty-state" hidden>Todavía no cargaste gastos este mes.</p>
-    </section>
-
-    <!-- Transactions -->
-    <section class="card viz-root">
-      <h2 class="card-title">Movimientos</h2>
-      <div id="txList" class="tx-list"></div>
-      <p id="emptyTx" class="empty-state" hidden>No hay gastos este mes. Tocá el botón + para agregar el primero.</p>
+      <h2 class="card-title">Historial</h2>
+      <div id="historyList" class="tx-list"></div>
+      <p id="historyEmpty" class="empty-state" hidden>Todavía no registraste entrenamientos.</p>
     </section>
 
   </main>
 
-  <button id="fab" class="fab" aria-label="Agregar gasto">
+  <button id="fab" class="fab" aria-label="Empezar entrenamiento">
     <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
   </button>
 
 </div>
 
-<!-- Add expense sheet -->
-<div id="overlay" class="overlay" hidden></div>
-<div id="sheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" hidden>
+<!-- Start workout sheet -->
+<div id="startOverlay" class="overlay" hidden></div>
+<div id="startSheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="startTitle" hidden>
   <div class="sheet-handle"></div>
-  <h2 id="sheetTitle" class="sheet-title">Nuevo gasto</h2>
-  <form id="expenseForm">
-    <div class="amount-field">
-      <span class="currency-prefix" id="currencyPrefix">$</span>
-      <input type="number" id="amountInput" inputmode="decimal" step="0.01" min="0" placeholder="0" required autocomplete="off" />
-    </div>
+  <h2 id="startTitle" class="sheet-title">Empezar entrenamiento</h2>
+  <div id="startRoutineList" class="start-routine-list"></div>
+  <button type="button" id="startBlankBtn" class="btn btn-ghost full start-blank-btn">🏋️ Entrenamiento libre</button>
+  <div class="sheet-actions">
+    <button type="button" id="startCancelBtn" class="btn btn-ghost full">Cancelar</button>
+  </div>
+</div>
 
+<!-- Active session sheet -->
+<div id="sessionOverlay" class="overlay" hidden></div>
+<div id="sessionSheet" class="sheet sheet-tall" role="dialog" aria-modal="true" aria-labelledby="sessionTitle" hidden>
+  <div class="sheet-handle"></div>
+  <h2 id="sessionTitle" class="sheet-title">Entrenamiento</h2>
+  <div id="sessionExerciseList" class="session-ex-list"></div>
+  <div class="field-group">
+    <label class="field-label" for="newExerciseInput">Agregar ejercicio</label>
+    <div class="add-exercise-row">
+      <input type="text" id="newExerciseInput" placeholder="Ej: Curl femoral" autocomplete="off" maxlength="60" />
+      <button type="button" id="addExerciseBtn" class="btn btn-ghost">+ Agregar</button>
+    </div>
+  </div>
+  <div class="sheet-actions">
+    <button type="button" id="sessionCancelBtn" class="btn btn-ghost">Cancelar</button>
+    <button type="button" id="sessionSaveBtn" class="btn btn-primary">Guardar</button>
+  </div>
+</div>
+
+<!-- Routine editor sheet (create / edit / review import) -->
+<div id="routineOverlay" class="overlay" hidden></div>
+<div id="routineSheet" class="sheet sheet-tall" role="dialog" aria-modal="true" aria-labelledby="routineSheetTitle" hidden>
+  <div class="sheet-handle"></div>
+  <h2 id="routineSheetTitle" class="sheet-title">Nueva rutina</h2>
+  <form id="routineForm">
     <div class="field-group">
-      <label class="field-label">Categoría</label>
-      <div id="categoryChips" class="chip-grid"></div>
+      <label class="field-label" for="routineNameInput">Nombre</label>
+      <input type="text" id="routineNameInput" placeholder="Ej: Día 1 - Pecho y tríceps" autocomplete="off" maxlength="60" required />
     </div>
-
-    <div class="field-row">
-      <div class="field-group grow">
-        <label class="field-label" for="noteInput">Nota (opcional)</label>
-        <input type="text" id="noteInput" placeholder="Ej: almuerzo con Juan" autocomplete="off" maxlength="60" />
-      </div>
-      <div class="field-group">
-        <label class="field-label" for="dateInput">Fecha</label>
-        <input type="date" id="dateInput" required />
-      </div>
-    </div>
-
     <div class="field-group">
-      <label class="toggle-row">
-        <input type="checkbox" id="repeatToggle" />
-        <span>🔁 Repetir todos los meses</span>
-      </label>
-      <p id="repeatHint" class="field-hint" hidden>Se va a cargar solo, cada mes, el día <strong id="repeatDay"></strong>.</p>
+      <label class="field-label">Ejercicios</label>
+      <div id="routineExerciseList" class="routine-ex-list"></div>
+      <button type="button" id="addRoutineExerciseBtn" class="link-btn">+ Agregar ejercicio</button>
     </div>
-
     <div class="sheet-actions">
-      <button type="button" id="cancelBtn" class="btn btn-ghost">Cancelar</button>
-      <button type="submit" class="btn btn-primary">Guardar</button>
+      <button type="button" id="routineCancelBtn" class="btn btn-ghost">Cancelar</button>
+      <button type="submit" class="btn btn-primary">Guardar rutina</button>
     </div>
   </form>
+</div>
+
+<!-- WhatsApp import sheet -->
+<div id="importOverlay" class="overlay" hidden></div>
+<div id="importSheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="importTitle" hidden>
+  <div class="sheet-handle"></div>
+  <h2 id="importTitle" class="sheet-title">Importar rutina de WhatsApp</h2>
+  <p class="field-hint" style="margin-top:-8px;">Copiá el mensaje con la rutina que te mandaron y pegalo acá abajo. Después vas a poder revisar y corregir cada ejercicio antes de guardar.</p>
+  <div class="field-group">
+    <textarea id="importTextarea" class="import-textarea" placeholder="Ej:&#10;1. Sentadilla 4x10&#10;2. Press banca 4x8 40kg&#10;3. Remo con barra 3x12" autocomplete="off"></textarea>
+  </div>
+  <div class="sheet-actions">
+    <button type="button" id="importCancelBtn" class="btn btn-ghost">Cancelar</button>
+    <button type="button" id="importParseBtn" class="btn btn-primary">Analizar mensaje</button>
+  </div>
+</div>
+
+<!-- History detail sheet -->
+<div id="historyDetailOverlay" class="overlay" hidden></div>
+<div id="historyDetailSheet" class="sheet sheet-tall" role="dialog" aria-modal="true" aria-labelledby="historyDetailTitle" hidden>
+  <div class="sheet-handle"></div>
+  <h2 id="historyDetailTitle" class="sheet-title">Entrenamiento</h2>
+  <div id="historyDetailContent" class="history-detail"></div>
+  <div class="sheet-actions">
+    <button type="button" id="historyDetailDeleteBtn" class="btn btn-danger full">Eliminar entrenamiento</button>
+  </div>
+  <div class="sheet-actions">
+    <button type="button" id="historyDetailCloseBtn" class="btn btn-primary full">Cerrar</button>
+  </div>
 </div>
 
 <!-- Settings sheet -->
@@ -138,69 +164,20 @@
   <div class="sheet-handle"></div>
   <h2 id="settingsTitle" class="sheet-title">Configuración</h2>
   <div class="field-group">
-    <label class="field-label" for="currencySelect">Moneda</label>
-    <select id="currencySelect"></select>
-  </div>
-  <div class="field-group">
-    <label class="field-label">Presupuesto</label>
-    <p class="field-hint" style="margin-top:0;">Se edita tocando el lápiz ✏️ en la tarjeta de presupuesto del dashboard.</p>
-  </div>
-  <div class="field-group">
-    <label class="field-label">Gastos recurrentes</label>
-    <button type="button" id="openRecurringBtn" class="btn btn-ghost full">Ver gastos recurrentes</button>
-    <p class="field-hint">Para agregar uno nuevo, cargá un gasto y activá "Repetir todos los meses".</p>
+    <label class="field-label" for="unitSelect">Unidad de peso</label>
+    <select id="unitSelect">
+      <option value="kg">Kilogramos (kg)</option>
+      <option value="lb">Libras (lb)</option>
+    </select>
   </div>
   <div class="field-group danger-zone">
     <label class="field-label">Datos</label>
     <button type="button" id="exportBtn" class="btn btn-ghost full">Exportar datos (JSON)</button>
-    <button type="button" id="clearBtn" class="btn btn-danger full">Borrar todos los gastos</button>
+    <button type="button" id="clearBtn" class="btn btn-danger full">Borrar todos los datos</button>
   </div>
   <div class="sheet-actions">
     <button type="button" id="closeSettingsBtn" class="btn btn-primary full">Listo</button>
   </div>
-</div>
-
-<!-- Recurring list sheet -->
-<div id="recurringOverlay" class="overlay" hidden></div>
-<div id="recurringSheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="recurringTitle" hidden>
-  <div class="sheet-handle"></div>
-  <h2 id="recurringTitle" class="sheet-title">Gastos recurrentes</h2>
-  <p class="field-hint" style="margin-top:-8px;">Se cargan solos como gasto cada mes, en el día que elijas.</p>
-  <div id="recurringList" class="recurring-list"></div>
-  <p id="recurringEmpty" class="empty-state" hidden>No tenés gastos recurrentes cargados.</p>
-  <div class="sheet-actions">
-    <button type="button" id="closeRecurringBtn" class="btn btn-ghost">Cerrar</button>
-    <button type="button" id="addRecurringBtn" class="btn btn-primary">+ Agregar</button>
-  </div>
-</div>
-
-<!-- Budget edit sheet -->
-<div id="budgetOverlay" class="overlay" hidden></div>
-<div id="budgetSheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="budgetSheetTitle" hidden>
-  <div class="sheet-handle"></div>
-  <h2 id="budgetSheetTitle" class="sheet-title">Presupuesto de <span id="budgetSheetMonth"></span></h2>
-  <form id="budgetForm">
-    <div class="amount-field">
-      <span class="currency-prefix" id="budgetFormCurrencyPrefix">$</span>
-      <input type="number" id="budgetFormInput" inputmode="decimal" min="0" step="1" placeholder="0" required autocomplete="off" />
-    </div>
-    <p class="field-hint" style="margin-top:-14px;">No incluye Ahorro ni Inversiones.</p>
-
-    <div class="field-group">
-      <label class="toggle-row">
-        <input type="checkbox" id="budgetApplyAllToggle" checked />
-        <span>Usar este monto todos los meses</span>
-      </label>
-      <p class="field-hint">Si lo desmarcás, va a aplicar solo a <strong id="budgetFormMonthInline"></strong>.</p>
-    </div>
-
-    <button type="button" id="budgetRemoveOverrideBtn" class="btn btn-ghost full" hidden>Quitar presupuesto especial de este mes</button>
-
-    <div class="sheet-actions">
-      <button type="button" id="budgetCancelBtn" class="btn btn-ghost">Cancelar</button>
-      <button type="submit" class="btn btn-primary">Guardar</button>
-    </div>
-  </form>
 </div>
 
 <div id="toast" class="toast" hidden></div>
