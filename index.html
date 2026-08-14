@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Mi Rutina</title>
+<title>TORAZO</title>
 <meta name="description" content="Registrá tus entrenamientos, pesos y repeticiones desde el celular. Importá rutinas pegando el mensaje de WhatsApp." />
 <meta name="theme-color" content="#fcfcfb" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#111110" media="(prefers-color-scheme: dark)" />
@@ -15,7 +15,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="Mi Rutina" />
+<meta name="apple-mobile-web-app-title" content="TORAZO" />
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -23,7 +23,7 @@
 <div class="app">
 
   <header class="topbar">
-    <h1>Mi Rutina</h1>
+    <h1>TORAZO</h1>
     <button id="settingsBtn" class="icon-btn" aria-label="Configuración" aria-haspopup="dialog">
       <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 13.5a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V19.5a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H4.5a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H10.5a1.65 1.65 0 0 0 1-1.51V4.5a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V10.5a1.65 1.65 0 0 0 1.51 1H19.5a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>
     </button>
@@ -59,6 +59,16 @@
       </div>
       <div id="progressChart" class="bar-chart"></div>
       <p id="progressEmpty" class="empty-state">Registrá entrenamientos para ver tu progreso por ejercicio.</p>
+    </section>
+
+    <!-- Feeling / RPE -->
+    <section class="card viz-root">
+      <div class="card-title-row">
+        <h2 class="card-title">Cómo te sentiste</h2>
+        <span id="feelingAvg" class="feeling-avg" hidden></span>
+      </div>
+      <div id="feelingChart" class="bar-chart"></div>
+      <p id="feelingEmpty" class="empty-state">Calificá tus entrenamientos del 1 al 10 para ver esta info.</p>
     </section>
 
     <!-- History -->
@@ -100,6 +110,10 @@
       <input type="text" id="newExerciseInput" placeholder="Ej: Curl femoral" autocomplete="off" maxlength="60" />
       <button type="button" id="addExerciseBtn" class="btn btn-ghost">+ Agregar</button>
     </div>
+  </div>
+  <div class="field-group">
+    <label class="field-label">¿Cómo te sentiste? (opcional)</label>
+    <div id="ratingRow" class="rating-row"></div>
   </div>
   <div class="sheet-actions">
     <button type="button" id="sessionCancelBtn" class="btn btn-ghost">Cancelar</button>

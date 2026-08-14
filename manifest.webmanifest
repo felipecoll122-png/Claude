@@ -1,6 +1,6 @@
 {
-  "name": "Mi Rutina",
-  "short_name": "Mi Rutina",
+  "name": "TORAZO",
+  "short_name": "TORAZO",
   "description": "Registrá tus entrenamientos, pesos y repeticiones desde el celular. Importá rutinas de WhatsApp.",
   "start_url": "./index.html",
   "scope": "./",

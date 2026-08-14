@@ -1,8 +1,8 @@
-name: Deploy Mi Rutina to GitHub Pages
+name: Deploy TORAZO to GitHub Pages
 
 on:
   push:
-    branches: [claude/gym-progress-app-goyv40]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -11,7 +11,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages-deploy-gym
+  group: pages-deploy
   cancel-in-progress: true
 
 jobs:

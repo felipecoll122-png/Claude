@@ -1,4 +1,4 @@
-# Mi Rutina
+# TORAZO
 
 Una app web simple para registrar tus entrenamientos desde el celular: pesos y repeticiones por ejercicio, rutinas propias y progreso a lo largo del tiempo. Sin backend: todo se guarda en el `localStorage` del navegador. Es instalable como PWA (funciona offline y se puede agregar a la pantalla de inicio).
 
@@ -22,8 +22,8 @@ Abrí `http://localhost:8080` en el navegador (o desde el celular, usando la IP 
 
 ## Deploy gratis (GitHub Pages)
 
-1. Hacé push de este repo a GitHub (rama `claude/gym-progress-app-goyv40`, o ajustá el workflow).
-2. En Settings → Pages, elegí "Deploy from a branch" y la rama/carpeta raíz (o usá el workflow ya incluido en `.github/workflows/pages-gym.yml`).
+1. Hacé push de este repo a GitHub (rama `main`).
+2. En Settings → Pages, elegí como "Source" la opción **"GitHub Actions"** (el workflow ya está incluido en `.github/workflows/pages.yml` y se dispara solo con cada push a `main`).
 3. Usá la URL que te da GitHub Pages.
 
 También funciona igual de bien en Netlify, Vercel o Cloudflare Pages arrastrando la carpeta.
@@ -34,7 +34,8 @@ También funciona igual de bien en Netlify, Vercel o Cloudflare Pages arrastrand
 - **Importar de WhatsApp**: copiá el mensaje de texto con la rutina que te mandaron, pegalo en "Importar rutina de WhatsApp" y la app detecta automáticamente cada ejercicio con sus series y repeticiones (soporta formatos como `4x10`, `3 series x 12`, `4x8 40kg`, `3x fallo`). Después podés revisar y corregir cada línea antes de guardar — no requiere ninguna cuenta ni configuración adicional, es solo pegar y listo.
 - **Registrar entrenamiento**: tocá el botón "+" para empezar, elegí una rutina (o "Entrenamiento libre") y cargá el peso y las repeticiones de cada serie a medida que entrenás. Se pueden agregar series de más o ejercicios extra que no estaban en la rutina original, sin tener que modificarla.
 - **Progreso**: gráfico simple por ejercicio con el peso máximo levantado en cada sesión (o repeticiones, para ejercicios sin peso).
-- **Historial**: todos los entrenamientos guardados, agrupados por día, con el detalle de cada serie.
+- **Cómo te sentiste**: al guardar un entrenamiento podés calificarlo del 1 al 10 (opcional). Un mini dashboard muestra el promedio y la evolución de los últimos entrenamientos calificados.
+- **Historial**: todos los entrenamientos guardados, agrupados por día, con el detalle de cada serie y la calificación si la cargaste.
 - Configuración: unidad de peso (kg/lb) y exportar/borrar los datos.
 
 ## Sobre la importación de WhatsApp

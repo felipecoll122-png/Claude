@@ -147,6 +147,9 @@
   const progressEmpty = document.getElementById('progressEmpty');
   const historyList = document.getElementById('historyList');
   const historyEmpty = document.getElementById('historyEmpty');
+  const feelingChart = document.getElementById('feelingChart');
+  const feelingEmpty = document.getElementById('feelingEmpty');
+  const feelingAvg = document.getElementById('feelingAvg');
   const toast = document.getElementById('toast');
 
   const startOverlay = document.getElementById('startOverlay');
@@ -158,6 +161,7 @@
   const sessionTitle = document.getElementById('sessionTitle');
   const sessionExerciseList = document.getElementById('sessionExerciseList');
   const newExerciseInput = document.getElementById('newExerciseInput');
+  const ratingRow = document.getElementById('ratingRow');
 
   const routineOverlay = document.getElementById('routineOverlay');
   const routineSheet = document.getElementById('routineSheet');
@@ -185,6 +189,7 @@
     renderHero();
     renderRoutines();
     renderProgress();
+    renderFeeling();
     renderHistory();
   }
 
@@ -343,6 +348,40 @@
     renderProgressChart();
   });
 
+  // ---------- Rendering: feeling (session rating 1-10) ----------
+
+  function renderFeeling() {
+    const rated = sessions
+      .filter(s => typeof s.rating === 'number')
+      .map(s => ({ date: s.date, sortKey: s.date + '_' + (s.createdAt || 0), rating: s.rating }))
+      .sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+
+    feelingChart.innerHTML = '';
+    if (rated.length === 0) {
+      feelingEmpty.hidden = false;
+      feelingAvg.hidden = true;
+      return;
+    }
+    feelingEmpty.hidden = true;
+
+    const recent = rated.slice(-8);
+    const avg = recent.reduce((sum, r) => sum + r.rating, 0) / recent.length;
+    feelingAvg.hidden = false;
+    feelingAvg.textContent = `Promedio: ${trimNum(avg)}/10`;
+
+    for (const r of recent) {
+      const pct = (r.rating / 10) * 100;
+      const row = document.createElement('div');
+      row.className = 'bar-row';
+      row.innerHTML = `
+        <span class="bar-row-label">${formatShortDate(r.date)}</span>
+        <span class="bar-track"><span class="bar-fill" style="width:${pct}%"></span></span>
+        <span class="bar-row-value">${r.rating}/10</span>
+      `;
+      feelingChart.appendChild(row);
+    }
+  }
+
   // ---------- Rendering: history ----------
 
   function renderHistory() {
@@ -361,6 +400,7 @@
         historyList.appendChild(heading);
       }
       const setCount = s.exercises.reduce((n, ex) => n + ex.sets.length, 0);
+      const ratingNote = typeof s.rating === 'number' ? ` · ${s.rating}/10` : '';
       const row = document.createElement('div');
       row.className = 'tx-row';
       row.dataset.id = s.id;
@@ -368,7 +408,7 @@
         <span class="tx-icon">🏋️</span>
         <span class="tx-main">
           <div class="tx-category">${escapeHtml(s.routineName || 'Entrenamiento libre')}</div>
-          <div class="tx-note">${s.exercises.length} ejercicio${s.exercises.length === 1 ? '' : 's'} · ${setCount} serie${setCount === 1 ? '' : 's'}</div>
+          <div class="tx-note">${s.exercises.length} ejercicio${s.exercises.length === 1 ? '' : 's'} · ${setCount} serie${setCount === 1 ? '' : 's'}${ratingNote}</div>
         </span>
         <span class="tx-chevron">
           <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -397,7 +437,8 @@
         </div>
       </div>
     `).join('');
-    historyDetailContent.innerHTML = `<div class="history-detail-meta">${formatDayHeading(s.date)}</div>${blocks}`;
+    const ratingMeta = typeof s.rating === 'number' ? ` · Calificación: ${s.rating}/10` : '';
+    historyDetailContent.innerHTML = `<div class="history-detail-meta">${formatDayHeading(s.date)}${ratingMeta}</div>${blocks}`;
     historyDetailOverlay.hidden = false;
     historyDetailSheet.hidden = false;
     document.body.style.overflow = 'hidden';
@@ -459,6 +500,7 @@
       date: toISODate(new Date()),
       routineId: routine ? routine.id : null,
       routineName: routine ? routine.name : 'Entrenamiento libre',
+      rating: null,
       exercises: routine
         ? routine.exercises.map(e => ({
             name: e.name,
@@ -475,6 +517,7 @@
     sessionTitle.textContent = sessionDraft.routineName;
     newExerciseInput.value = '';
     renderSessionExercises();
+    renderRatingRow();
     sessionOverlay.hidden = false;
     sessionSheet.hidden = false;
     document.body.style.overflow = 'hidden';
@@ -486,7 +529,7 @@
   }
 
   function hasSessionData() {
-    return sessionDraft.exercises.some(ex =>
+    return sessionDraft.rating != null || sessionDraft.exercises.some(ex =>
       ex.sets.some(s => (s.weight !== '' && s.weight != null) || (s.reps && String(s.reps).trim() !== ''))
     );
   }
@@ -546,6 +589,19 @@
     renderSessionExercises();
   });
 
+  function renderRatingRow() {
+    ratingRow.innerHTML = Array.from({ length: 10 }, (_, i) => i + 1).map(n => `
+      <button type="button" class="rating-btn" data-value="${n}" aria-pressed="${sessionDraft.rating === n}">${n}</button>
+    `).join('');
+  }
+  ratingRow.addEventListener('click', (ev) => {
+    const btn = ev.target.closest('.rating-btn');
+    if (!btn) return;
+    const value = parseInt(btn.dataset.value, 10);
+    sessionDraft.rating = sessionDraft.rating === value ? null : value;
+    renderRatingRow();
+  });
+
   document.getElementById('addExerciseBtn').addEventListener('click', () => {
     const name = newExerciseInput.value.trim();
     if (!name) return;
@@ -587,6 +643,7 @@
       createdAt: Date.now(),
       routineId: sessionDraft.routineId,
       routineName: sessionDraft.routineName,
+      rating: sessionDraft.rating,
       exercises: finalExercises,
     });
     saveSessions();
@@ -738,7 +795,7 @@
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `mi-rutina-${toISODate(new Date())}.json`;
+    a.download = `torazo-${toISODate(new Date())}.json`;
     a.click();
     URL.revokeObjectURL(url);
   });
