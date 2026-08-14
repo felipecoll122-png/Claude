@@ -608,6 +608,22 @@
 
   // ---------- Active session sheet ----------
 
+  // Finds the most recent weight logged for an exercise (by name, case-insensitive)
+  // so a new session can start from "what you lifted last time" instead of blank.
+  function lastWeightForExercise(name) {
+    const key = name.toLowerCase();
+    let best = null;
+    for (const s of sessions) {
+      const ex = s.exercises.find(e => e.name.toLowerCase() === key);
+      if (!ex) continue;
+      const weights = ex.sets.map(st => st.weight).filter(w => typeof w === 'number' && w > 0);
+      if (weights.length === 0) continue;
+      const sortKey = s.date + '_' + (s.createdAt || 0);
+      if (!best || sortKey > best.sortKey) best = { sortKey, weight: weights[weights.length - 1] };
+    }
+    return best ? best.weight : null;
+  }
+
   function startSession(routine) {
     sessionDraft = {
       date: toISODate(new Date()),
@@ -615,11 +631,15 @@
       routineName: routine ? routine.name : 'Entrenamiento libre',
       rating: null,
       exercises: routine
-        ? routine.exercises.map(e => ({
-            name: e.name,
-            target: formatTarget(e.sets, e.reps),
-            sets: Array.from({ length: Math.max(1, e.sets || 3) }, () => ({ weight: '', reps: guessRepsDefault(e.reps) })),
-          }))
+        ? routine.exercises.map(e => {
+            const last = lastWeightForExercise(e.name);
+            return {
+              name: e.name,
+              target: formatTarget(e.sets, e.reps),
+              lastWeight: last,
+              sets: Array.from({ length: Math.max(1, e.sets || 3) }, () => ({ weight: last != null ? trimNum(last) : '', reps: guessRepsDefault(e.reps) })),
+            };
+          })
         : [],
     };
     closeStartSheet();
@@ -647,30 +667,50 @@
     );
   }
 
+  const WEIGHT_STEP = { kg: 2.5, lb: 5 };
+
   function renderSessionExercises() {
-    sessionExerciseList.innerHTML = sessionDraft.exercises.map((ex, i) => `
+    sessionExerciseList.innerHTML = sessionDraft.exercises.map((ex, i) => {
+      const hints = [];
+      if (ex.target) hints.push(`Objetivo: ${ex.target}`);
+      if (ex.lastWeight != null) hints.push(`Última vez: ${formatWeight(ex.lastWeight)}`);
+      return `
       <div class="session-ex-block">
         <div class="session-ex-header">
           <div>
             <div class="session-ex-name">${escapeHtml(ex.name)}</div>
-            ${ex.target ? `<span class="session-ex-target">Objetivo: ${escapeHtml(ex.target)}</span>` : ''}
+            ${hints.length ? `<span class="session-ex-target">${escapeHtml(hints.join(' · '))}</span>` : ''}
           </div>
           <button type="button" class="session-ex-remove" data-action="remove-ex" data-ex="${i}" aria-label="Quitar ejercicio">✕</button>
         </div>
         <div class="set-rows">
           ${ex.sets.map((s, j) => `
             <div class="set-row">
-              <span class="set-index">Serie ${j + 1}</span>
-              <input type="number" inputmode="decimal" step="0.5" min="0" class="set-weight" placeholder="${settings.unit}" value="${s.weight}" data-ex="${i}" data-set="${j}" />
-              <span class="set-x">×</span>
-              <input type="text" inputmode="numeric" class="set-reps" placeholder="reps" value="${escapeHtml(String(s.reps))}" data-ex="${i}" data-set="${j}" />
-              <button type="button" class="set-remove" data-action="remove-set" data-ex="${i}" data-set="${j}" aria-label="Eliminar serie">✕</button>
+              <div class="set-row-top">
+                <span class="set-index">Serie ${j + 1}</span>
+                <button type="button" class="set-remove" data-action="remove-set" data-ex="${i}" data-set="${j}" aria-label="Eliminar serie">✕</button>
+              </div>
+              <div class="set-row-inputs">
+                <div class="stepper">
+                  <button type="button" class="stepper-btn" data-action="dec-weight" data-ex="${i}" data-set="${j}" aria-label="Restar peso">−</button>
+                  <input type="number" inputmode="decimal" step="0.5" min="0" class="set-weight" placeholder="0" value="${s.weight}" data-ex="${i}" data-set="${j}" />
+                  <button type="button" class="stepper-btn" data-action="inc-weight" data-ex="${i}" data-set="${j}" aria-label="Sumar peso">+</button>
+                </div>
+                <span class="set-unit">${settings.unit}</span>
+                <span class="set-x">×</span>
+                <div class="stepper stepper-reps">
+                  <button type="button" class="stepper-btn" data-action="dec-reps" data-ex="${i}" data-set="${j}" aria-label="Restar repeticiones">−</button>
+                  <input type="text" inputmode="numeric" class="set-reps" placeholder="0" value="${escapeHtml(String(s.reps))}" data-ex="${i}" data-set="${j}" />
+                  <button type="button" class="stepper-btn" data-action="inc-reps" data-ex="${i}" data-set="${j}" aria-label="Sumar repeticiones">+</button>
+                </div>
+              </div>
             </div>
           `).join('')}
         </div>
         <button type="button" class="add-set-btn" data-action="add-set" data-ex="${i}">+ Serie</button>
       </div>
-    `).join('');
+    `;
+    }).join('');
   }
 
   sessionExerciseList.addEventListener('input', (ev) => {
@@ -689,15 +729,29 @@
     const i = parseInt(btn.dataset.ex, 10);
     const ex = sessionDraft.exercises[i];
     if (!ex) return;
-    if (btn.dataset.action === 'remove-ex') {
+    const action = btn.dataset.action;
+    if (action === 'remove-ex') {
       sessionDraft.exercises.splice(i, 1);
-    } else if (btn.dataset.action === 'add-set') {
+    } else if (action === 'add-set') {
       const last = ex.sets[ex.sets.length - 1];
       ex.sets.push({ weight: last ? last.weight : '', reps: last ? last.reps : '' });
-    } else if (btn.dataset.action === 'remove-set') {
+    } else if (action === 'remove-set') {
       const j = parseInt(btn.dataset.set, 10);
       ex.sets.splice(j, 1);
       if (ex.sets.length === 0) ex.sets.push({ weight: '', reps: '' });
+    } else if (action === 'inc-weight' || action === 'dec-weight') {
+      const j = parseInt(btn.dataset.set, 10);
+      const set = ex.sets[j];
+      const step = WEIGHT_STEP[settings.unit] || 2.5;
+      const current = parseFloat(String(set.weight).replace(',', '.')) || 0;
+      set.weight = trimNum(Math.max(0, action === 'inc-weight' ? current + step : current - step));
+    } else if (action === 'inc-reps' || action === 'dec-reps') {
+      const j = parseInt(btn.dataset.set, 10);
+      const set = ex.sets[j];
+      const current = parseInt(String(set.reps).match(/\d+/)?.[0] || '0', 10);
+      set.reps = String(Math.max(0, action === 'inc-reps' ? current + 1 : current - 1));
+    } else {
+      return;
     }
     renderSessionExercises();
   });
@@ -718,7 +772,8 @@
   document.getElementById('addExerciseBtn').addEventListener('click', () => {
     const name = newExerciseInput.value.trim();
     if (!name) return;
-    sessionDraft.exercises.push({ name, target: '', sets: [{ weight: '', reps: '' }] });
+    const last = lastWeightForExercise(name);
+    sessionDraft.exercises.push({ name, target: '', lastWeight: last, sets: [{ weight: last != null ? trimNum(last) : '', reps: '' }] });
     newExerciseInput.value = '';
     renderSessionExercises();
   });
