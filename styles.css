@@ -603,7 +603,7 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
 }
 .routine-ex-row {
   display: grid;
-  grid-template-columns: 1fr 52px 12px 64px 32px;
+  grid-template-columns: 1fr 44px 12px 92px 32px;
   align-items: center;
   gap: 6px;
 }

@@ -15,6 +15,8 @@
   let sessionDraft = null;     // in-progress workout being logged
   let editingRoutineId = null; // set when the routine sheet is editing an existing routine
   let historyDetailId = null;  // session currently shown in the history detail sheet
+  let importBatch = null;      // array of {label, exercises} when reviewing a multi-day WhatsApp import
+  let importBatchIndex = 0;    // index into importBatch currently shown in the routine sheet
 
   function loadRoutines() {
     try {
@@ -59,7 +61,11 @@
     return div.innerHTML;
   }
   function capitalizeFirst(str) { return str.charAt(0).toUpperCase() + str.slice(1); }
-  function formatTarget(sets, reps) { return `${sets}x${reps}`; }
+  function formatTarget(sets, reps) {
+    const s = String(reps);
+    if (/^\d+(-\d+)?$/.test(s) || s.toLowerCase() === 'fallo') return `${sets}x${s}`;
+    return s; // already a full descriptive scheme, e.g. "2x2 90% 2x1 100%"
+  }
   function formatDayHeading(iso) {
     const today = toISODate(new Date());
     const yesterday = toISODate(new Date(Date.now() - 86400000));
@@ -78,12 +84,43 @@
   function formatWeight(w) { return `${trimNum(w)} ${settings.unit}`; }
 
   // ---------- WhatsApp routine text parser ----------
+  //
+  // Handles two exercise-line shapes:
+  //  - inline: "Sentadilla 4x10" (name and scheme on the same line)
+  //  - block: a line that is ONLY a scheme ("2x2 90% 2x1 100%", "3x6 al 85%")
+  //    followed by a list of bare exercise names that all share it, until the
+  //    next scheme line or section header.
+  // A message with "DIA n" headers is split into one day per header, each
+  // becoming its own routine.
 
   const HEADER_KEYWORDS = /^(d[ií]a|day|semana|week|rutina|bloque|fase|descanso|rest\s*day|nota|notas|entrada\s+en\s+calor|calentamiento|warm\s*up)\b/i;
+  const DAY_HEADER_RE = /^d[ií]a\s*(\d+)\b/i;
 
-  function parseRoutineText(text) {
-    const lines = text.split(/\r?\n/);
+  function isSchemeLine(line) {
+    if (!/\d+\s*[xX×]\s*\d+/.test(line)) return false;
+    const rest = line
+      .replace(/\d+\s*[xX×]\s*\d+/g, ' ')
+      .replace(/\d+(?:[.,]\d+)?\s*%/g, ' ')
+      .replace(/\b(al|cada|lado|lados|pierna|piernas|y|o|con|más|mas)\b/gi, ' ');
+    return !/[A-Za-zÁÉÍÓÚÑÜáéíóúñü]/.test(rest);
+  }
+
+  function extractSchemeFromLine(line) {
+    const matches = [...line.matchAll(/(\d+)\s*[xX×]\s*(\d+)/g)];
+    const totalSets = matches.reduce((sum, m) => sum + parseInt(m[1], 10), 0) || 3;
+    return { sets: totalSets, reps: line.trim() };
+  }
+
+  function guessRepsDefault(reps) {
+    const s = String(reps);
+    if (/^\d+(-\d+)?$/.test(s) || s.toLowerCase() === 'fallo') return s;
+    const m = s.match(/\d+\s*[xX×]\s*(\d+)/);
+    return m ? m[1] : '';
+  }
+
+  function parseExerciseLines(lines) {
     const results = [];
+    let pendingScheme = null;
     for (const rawLine of lines) {
       let line = rawLine.trim();
       if (!line) continue;
@@ -91,6 +128,13 @@
       // Strip leading bullets / numbering ("1.", "2)", "-", "•", …)
       line = line.replace(/^[\s\-\*•▪●○]*\d{1,2}[\.\)]\s*/, '').replace(/^[\-\*•▪●○]\s*/, '').trim();
       if (!line) continue;
+
+      if (isSchemeLine(line)) {
+        pendingScheme = extractSchemeFromLine(line);
+        continue;
+      }
+
+      if (HEADER_KEYWORDS.test(line)) { pendingScheme = null; continue; }
 
       const letters = line.replace(/[^A-Za-zÁÉÍÓÚÑÜáéíóúñü]/g, '');
       const isAllCaps = letters.length > 2 && letters === letters.toUpperCase();
@@ -103,28 +147,48 @@
         line = line.replace(weightMatch[0], ' ');
       }
 
-      // Extract sets x reps in a few common shapes
+      // Extract sets x reps in a few common inline shapes. The scheme always
+      // trails the exercise name, so once we find where it starts, everything
+      // from there to the end of the line belongs to the scheme — not just
+      // the first "NxM" token — so compound schemes ("2x3 90% 2x2 95%") don't
+      // leave leftover numbers/percentages stuck onto the exercise name.
       let sets = null, reps = null;
-      let m = line.match(/(\d{1,2})\s*[xX×]\s*(\d{1,3})(?:\s*[-–]\s*(\d{1,3}))?/);
-      if (m) {
-        sets = parseInt(m[1], 10);
-        reps = m[3] ? `${m[2]}-${m[3]}` : m[2];
-        line = line.replace(m[0], ' ');
-      } else if ((m = line.match(/(\d{1,2})\s*[xX×]\s*fallo/i))) {
-        sets = parseInt(m[1], 10);
-        reps = 'fallo';
-        line = line.replace(m[0], ' ');
-      } else if ((m = line.match(/(\d{1,2})\s*series?\s*(?:de|x)?\s*(\d{1,3})\s*rep/i))) {
-        sets = parseInt(m[1], 10);
-        reps = m[2];
-        line = line.replace(m[0], ' ');
+      const schemeStart = line.search(/\d{1,2}\s*[xX×]\s*(\d{1,3}|fallo)/i);
+      if (schemeStart !== -1) {
+        const namePart = line.slice(0, schemeStart);
+        const schemeText = line.slice(schemeStart).trim();
+        let sm;
+        if ((sm = schemeText.match(/^(\d{1,2})\s*[xX×]\s*fallo\s*$/i))) {
+          sets = parseInt(sm[1], 10);
+          reps = 'fallo';
+        } else if ((sm = schemeText.match(/^(\d{1,2})\s*[xX×]\s*(\d{1,3})(?:\s*[-–]\s*(\d{1,3}))?\s*$/))) {
+          sets = parseInt(sm[1], 10);
+          reps = sm[3] ? `${sm[2]}-${sm[3]}` : sm[2];
+        } else {
+          const extracted = extractSchemeFromLine(schemeText);
+          sets = extracted.sets;
+          reps = extracted.reps;
+        }
+        line = namePart;
+      } else {
+        const m = line.match(/(\d{1,2})\s*series?\s*(?:de|x)?\s*(\d{1,3})\s*rep/i);
+        if (m) {
+          sets = parseInt(m[1], 10);
+          reps = m[2];
+          line = line.replace(m[0], ' ');
+        }
       }
 
-      if (sets === null && (isAllCaps || HEADER_KEYWORDS.test(line))) continue; // section header / day title / rest day
+      if (sets === null && isAllCaps) { pendingScheme = null; continue; } // section header / day title
 
       let name = line.replace(/[:\-–]+\s*$/, '').replace(/^[:\-–]+\s*/, '').replace(/\s{2,}/g, ' ').trim();
       if (!name) continue;
       if (name.length > 60) name = name.slice(0, 60);
+
+      if (sets === null && pendingScheme) {
+        sets = pendingScheme.sets;
+        reps = pendingScheme.reps;
+      }
 
       results.push({
         name: capitalizeFirst(name),
@@ -134,6 +198,30 @@
       });
     }
     return results;
+  }
+
+  function splitIntoDaySegments(text) {
+    const lines = text.split(/\r?\n/);
+    const segments = [];
+    let current = null;
+    for (const raw of lines) {
+      const dayMatch = raw.trim().match(DAY_HEADER_RE);
+      if (dayMatch) {
+        current = { label: `Día ${dayMatch[1]}`, lines: [] };
+        segments.push(current);
+      } else if (current) {
+        current.lines.push(raw);
+      }
+      // Lines before the first "DIA n" marker (title, date range) are dropped.
+    }
+    if (segments.length === 0) return [{ label: null, lines }];
+    return segments;
+  }
+
+  function parseWhatsappRoutine(text) {
+    return splitIntoDaySegments(text)
+      .map(seg => ({ label: seg.label, exercises: parseExerciseLines(seg.lines) }))
+      .filter(day => day.exercises.length > 0);
   }
 
   // ---------- DOM refs ----------
@@ -437,12 +525,37 @@
         </div>
       </div>
     `).join('');
-    const ratingMeta = typeof s.rating === 'number' ? ` · Calificación: ${s.rating}/10` : '';
-    historyDetailContent.innerHTML = `<div class="history-detail-meta">${formatDayHeading(s.date)}${ratingMeta}</div>${blocks}`;
+    historyDetailContent.innerHTML = `
+      <div class="history-detail-meta">${formatDayHeading(s.date)}</div>
+      <div class="field-group" style="margin-bottom:4px;">
+        <label class="field-label">Calificación</label>
+        <div id="historyRatingRow" class="rating-row"></div>
+      </div>
+      ${blocks}
+    `;
+    renderHistoryRatingRow(s);
     historyDetailOverlay.hidden = false;
     historyDetailSheet.hidden = false;
     document.body.style.overflow = 'hidden';
   }
+  function renderHistoryRatingRow(s) {
+    const row = document.getElementById('historyRatingRow');
+    if (!row) return;
+    row.innerHTML = Array.from({ length: 10 }, (_, i) => i + 1).map(n => `
+      <button type="button" class="rating-btn" data-value="${n}" aria-pressed="${s.rating === n}">${n}</button>
+    `).join('');
+  }
+  historyDetailContent.addEventListener('click', (ev) => {
+    const btn = ev.target.closest('.rating-btn');
+    if (!btn || !historyDetailId) return;
+    const s = sessions.find(x => x.id === historyDetailId);
+    if (!s) return;
+    const value = parseInt(btn.dataset.value, 10);
+    s.rating = s.rating === value ? null : value;
+    saveSessions();
+    renderHistoryRatingRow(s);
+    render();
+  });
   function closeHistoryDetail() {
     historyDetailOverlay.hidden = true;
     historyDetailSheet.hidden = true;
@@ -505,7 +618,7 @@
         ? routine.exercises.map(e => ({
             name: e.name,
             target: formatTarget(e.sets, e.reps),
-            sets: Array.from({ length: Math.max(1, e.sets || 3) }, () => ({ weight: '', reps: String(e.reps || '') })),
+            sets: Array.from({ length: Math.max(1, e.sets || 3) }, () => ({ weight: '', reps: guessRepsDefault(e.reps) })),
           }))
         : [],
     };
@@ -682,9 +795,17 @@
     routineExerciseList.insertAdjacentHTML('beforeend', routineExerciseRowHtml({ name: '', sets: 3, reps: '10' }));
   });
 
-  function openRoutineSheet(mode, data) {
+  const routineSaveBtn = routineForm.querySelector('button[type="submit"]');
+
+  function openRoutineSheet(mode, data, batchInfo) {
     editingRoutineId = mode === 'edit' ? data.id : null;
-    routineSheetTitle.textContent = mode === 'edit' ? 'Editar rutina' : mode === 'import' ? 'Revisar rutina importada' : 'Nueva rutina';
+    if (mode === 'import' && batchInfo && batchInfo.batchTotal > 1) {
+      routineSheetTitle.textContent = `Revisar rutina importada (día ${batchInfo.batchIndex + 1} de ${batchInfo.batchTotal})`;
+      routineSaveBtn.textContent = batchInfo.batchIndex < batchInfo.batchTotal - 1 ? 'Guardar y seguir' : 'Guardar rutina';
+    } else {
+      routineSheetTitle.textContent = mode === 'edit' ? 'Editar rutina' : mode === 'import' ? 'Revisar rutina importada' : 'Nueva rutina';
+      routineSaveBtn.textContent = 'Guardar rutina';
+    }
     routineNameInput.value = data ? data.name : '';
     renderRoutineExerciseRows(data && data.exercises.length ? data.exercises : [{ name: '', sets: 3, reps: '10' }]);
     routineOverlay.hidden = false;
@@ -698,9 +819,19 @@
     document.body.style.overflow = '';
     editingRoutineId = null;
   }
+  function cancelRoutineSheet() {
+    const hadBatch = !!importBatch;
+    const savedSoFar = importBatchIndex;
+    const total = importBatch ? importBatch.length : 0;
+    importBatch = null;
+    importBatchIndex = 0;
+    closeRoutineSheet();
+    render();
+    if (hadBatch && savedSoFar > 0) showToast(`Se guardaron ${savedSoFar} de ${total} rutinas`);
+  }
   document.getElementById('newRoutineBtn').addEventListener('click', () => openRoutineSheet('new', null));
-  document.getElementById('routineCancelBtn').addEventListener('click', closeRoutineSheet);
-  routineOverlay.addEventListener('click', closeRoutineSheet);
+  document.getElementById('routineCancelBtn').addEventListener('click', cancelRoutineSheet);
+  routineOverlay.addEventListener('click', cancelRoutineSheet);
 
   routineForm.addEventListener('submit', (ev) => {
     ev.preventDefault();
@@ -720,6 +851,7 @@
       return;
     }
 
+    const wasEditing = !!editingRoutineId;
     if (editingRoutineId) {
       const r = routines.find(x => x.id === editingRoutineId);
       r.name = name;
@@ -728,9 +860,24 @@
       routines.push({ id: uid(), name, createdAt: Date.now(), exercises });
     }
     saveRoutines();
+
+    if (importBatch && importBatchIndex < importBatch.length - 1) {
+      importBatchIndex++;
+      const next = importBatch[importBatchIndex];
+      showToast(`"${name}" guardada · revisando día ${importBatchIndex + 1} de ${importBatch.length}`);
+      openRoutineSheet('import', {
+        name: next.label || `Rutina ${formatShortDate(toISODate(new Date()))}`,
+        exercises: next.exercises,
+      }, { batchIndex: importBatchIndex, batchTotal: importBatch.length });
+      return;
+    }
+
+    const batchTotal = importBatch ? importBatch.length : 0;
+    importBatch = null;
+    importBatchIndex = 0;
     closeRoutineSheet();
     render();
-    showToast(editingRoutineId ? 'Rutina actualizada' : 'Rutina guardada');
+    showToast(batchTotal > 1 ? `Se crearon ${batchTotal} rutinas` : (wasEditing ? 'Rutina actualizada' : 'Rutina guardada'));
   });
 
   // ---------- WhatsApp import sheet ----------
@@ -753,17 +900,32 @@
 
   document.getElementById('importParseBtn').addEventListener('click', () => {
     const text = importTextarea.value;
-    const parsed = parseRoutineText(text);
-    if (parsed.length === 0) {
+    const days = parseWhatsappRoutine(text);
+    if (days.length === 0) {
       showToast('No pude detectar ejercicios en ese texto. Revisá el formato o cargalos a mano.');
       return;
     }
     closeImportSheet();
-    openRoutineSheet('import', {
-      name: `Rutina ${formatShortDate(toISODate(new Date()))}`,
-      exercises: parsed,
-    });
-    showToast(`Se detectaron ${parsed.length} ejercicio${parsed.length === 1 ? '' : 's'} · revisalos y guardá`);
+
+    if (days.length > 1) {
+      importBatch = days;
+      importBatchIndex = 0;
+      const first = days[0];
+      openRoutineSheet('import', {
+        name: first.label || `Rutina ${formatShortDate(toISODate(new Date()))}`,
+        exercises: first.exercises,
+      }, { batchIndex: 0, batchTotal: days.length });
+      showToast(`Se detectaron ${days.length} días · revisá y guardá cada rutina`);
+    } else {
+      importBatch = null;
+      const only = days[0];
+      const total = only.exercises.length;
+      openRoutineSheet('import', {
+        name: only.label || `Rutina ${formatShortDate(toISODate(new Date()))}`,
+        exercises: only.exercises,
+      });
+      showToast(`Se detectaron ${total} ejercicio${total === 1 ? '' : 's'} · revisalos y guardá`);
+    }
   });
 
   // ---------- Settings sheet ----------
