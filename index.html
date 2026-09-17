@@ -150,6 +150,11 @@
     <button type="button" id="openRecurringBtn" class="btn btn-ghost full">Ver gastos recurrentes</button>
     <p class="field-hint">Para agregar uno nuevo, cargá un gasto y activá "Repetir todos los meses".</p>
   </div>
+  <div class="field-group">
+    <label class="field-label">Importar</label>
+    <button type="button" id="openImportBtn" class="btn btn-ghost full">Importar gastos (CSV)</button>
+    <p class="field-hint">Para cargar muchos gastos de una, por ejemplo desde un estado de cuenta.</p>
+  </div>
   <div class="field-group danger-zone">
     <label class="field-label">Datos</label>
     <button type="button" id="exportBtn" class="btn btn-ghost full">Exportar datos (JSON)</button>
@@ -201,6 +206,36 @@
       <button type="submit" class="btn btn-primary">Guardar</button>
     </div>
   </form>
+</div>
+
+<!-- Import sheet -->
+<div id="importOverlay" class="overlay" hidden></div>
+<div id="importSheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="importTitle" hidden>
+  <div class="sheet-handle"></div>
+  <h2 id="importTitle" class="sheet-title">Importar gastos</h2>
+  <p class="field-hint" style="margin-top:0;">Subí un archivo CSV o pegá el texto. Una fila por gasto: <code>fecha,monto,categoría,nota</code>.</p>
+
+  <div id="importForm">
+    <div class="field-group">
+      <input type="file" id="importFileInput" accept=".csv,text/csv,text/plain" />
+    </div>
+    <div class="field-group">
+      <textarea id="importTextarea" rows="6" placeholder="2026-09-05,2500,comida,Almuerzo&#10;2026-09-06,15000,transporte,Uber"></textarea>
+    </div>
+  </div>
+
+  <div id="importPreview" hidden>
+    <p id="importSummary" class="field-hint" style="margin-top:0;"></p>
+    <div id="importPreviewList" class="recurring-list"></div>
+  </div>
+
+  <p id="importError" class="field-hint import-error" hidden></p>
+
+  <div class="sheet-actions">
+    <button type="button" id="importCancelBtn" class="btn btn-ghost">Cancelar</button>
+    <button type="button" id="importPreviewBtn" class="btn btn-primary">Vista previa</button>
+    <button type="button" id="importConfirmBtn" class="btn btn-primary" hidden>Confirmar</button>
+  </div>
 </div>
 
 <div id="toast" class="toast" hidden></div>

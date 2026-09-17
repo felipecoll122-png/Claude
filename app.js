@@ -202,6 +202,18 @@
   const budgetApplyAllToggle = document.getElementById('budgetApplyAllToggle');
   const budgetRemoveOverrideBtn = document.getElementById('budgetRemoveOverrideBtn');
 
+  const importOverlay = document.getElementById('importOverlay');
+  const importSheet = document.getElementById('importSheet');
+  const importForm = document.getElementById('importForm');
+  const importFileInput = document.getElementById('importFileInput');
+  const importTextarea = document.getElementById('importTextarea');
+  const importPreview = document.getElementById('importPreview');
+  const importSummary = document.getElementById('importSummary');
+  const importPreviewList = document.getElementById('importPreviewList');
+  const importError = document.getElementById('importError');
+  const importPreviewBtn = document.getElementById('importPreviewBtn');
+  const importConfirmBtn = document.getElementById('importConfirmBtn');
+
   // ---------- Rendering ----------
 
   function render() {
@@ -657,6 +669,156 @@
     closeBudgetSheet();
     render();
     showToast('Vuelve a usar el presupuesto habitual');
+  });
+
+  // ---------- Bulk import ----------
+
+  function normalizeStr(s) {
+    return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+  }
+  const CATEGORY_LOOKUP = (() => {
+    const map = {};
+    for (const c of CATEGORIES) {
+      map[normalizeStr(c.id)] = c.id;
+      map[normalizeStr(c.label)] = c.id;
+    }
+    return map;
+  })();
+  function resolveImportCategory(raw) {
+    return CATEGORY_LOOKUP[normalizeStr(raw)] || 'otros';
+  }
+  function parseImportDate(raw) {
+    const s = (raw || '').trim();
+    let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (m) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+    m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+    return null;
+  }
+  function parseImportCSV(text) {
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    const rows = [];
+    const errors = [];
+    lines.forEach((line, i) => {
+      const cols = line.split(',').map(c => c.trim());
+      const [rawDate, rawAmount, rawCategory, ...noteParts] = cols;
+      const date = parseImportDate(rawDate);
+      const amount = parseFloat((rawAmount || '').replace(/[^\d.,\-]/g, '').replace(',', '.'));
+      if (!date || !amount) {
+        if (i === 0) return; // tolerate a header row
+        errors.push(`Línea ${i + 1}: no se pudo leer`);
+        return;
+      }
+      rows.push({
+        date,
+        amount: Math.abs(amount),
+        category: resolveImportCategory(rawCategory),
+        note: (noteParts.join(',') || '').slice(0, 60),
+      });
+    });
+    return { rows, errors };
+  }
+
+  let pendingImportRows = null;
+
+  function openImportSheet() {
+    closeSettings();
+    importTextarea.value = '';
+    importFileInput.value = '';
+    pendingImportRows = null;
+    importForm.hidden = false;
+    importPreview.hidden = true;
+    importError.hidden = true;
+    importPreviewBtn.hidden = false;
+    importConfirmBtn.hidden = true;
+    importOverlay.hidden = false;
+    importSheet.hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+  function closeImportSheet() {
+    importOverlay.hidden = true;
+    importSheet.hidden = true;
+    document.body.style.overflow = '';
+  }
+  document.getElementById('openImportBtn').addEventListener('click', openImportSheet);
+  document.getElementById('importCancelBtn').addEventListener('click', closeImportSheet);
+  importOverlay.addEventListener('click', closeImportSheet);
+
+  importFileInput.addEventListener('change', () => {
+    const file = importFileInput.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => { importTextarea.value = String(reader.result || ''); };
+    reader.readAsText(file);
+  });
+
+  importPreviewBtn.addEventListener('click', () => {
+    const { rows, errors } = parseImportCSV(importTextarea.value);
+
+    if (!rows.length) {
+      importPreview.hidden = true;
+      importError.hidden = false;
+      importError.textContent = errors.length
+        ? `No se pudo leer ninguna fila. ${errors.slice(0, 3).join(' · ')}`
+        : 'Pegá o subí al menos un gasto para poder importar.';
+      return;
+    }
+
+    pendingImportRows = rows;
+    importError.hidden = errors.length === 0;
+    if (errors.length) importError.textContent = `${errors.length} fila(s) se ignoraron por formato inválido.`;
+
+    const total = rows.reduce((s, r) => s + r.amount, 0);
+    importSummary.textContent = `${rows.length} gasto${rows.length === 1 ? '' : 's'} por un total de ${formatCurrency(total)}`;
+
+    importPreviewList.innerHTML = '';
+    for (const r of rows.slice(0, 40)) {
+      const cat = CATEGORY_BY_ID[r.category] || CATEGORY_BY_ID.otros;
+      const row = document.createElement('div');
+      row.className = 'recurring-row';
+      row.innerHTML = `
+        <span class="tx-icon" style="background:color-mix(in srgb, var(${cat.color}) 18%, transparent)">${cat.emoji}</span>
+        <span class="recurring-main">
+          <div class="recurring-name">${escapeHtml(r.note || cat.label)}</div>
+          <div class="recurring-meta">${formatDayHeading(r.date)} · ${cat.label}</div>
+        </span>
+        <span class="recurring-amount">${formatCurrency(r.amount)}</span>
+      `;
+      importPreviewList.appendChild(row);
+    }
+    if (rows.length > 40) {
+      const more = document.createElement('p');
+      more.className = 'field-hint';
+      more.textContent = `+ ${rows.length - 40} más`;
+      importPreviewList.appendChild(more);
+    }
+
+    importForm.hidden = true;
+    importPreview.hidden = false;
+    importPreviewBtn.hidden = true;
+    importConfirmBtn.hidden = false;
+  });
+
+  importConfirmBtn.addEventListener('click', () => {
+    if (!pendingImportRows || !pendingImportRows.length) return;
+    const added = pendingImportRows.map(r => ({
+      id: uid(), amount: r.amount, category: r.category, note: r.note, date: r.date,
+    }));
+    expenses.push(...added);
+    saveExpenses();
+    const addedIds = new Set(added.map(a => a.id));
+    const count = added.length;
+
+    closeImportSheet();
+    render();
+    showToast(`${count} gasto${count === 1 ? '' : 's'} importado${count === 1 ? '' : 's'}`, {
+      actionLabel: 'Deshacer',
+      onAction: () => {
+        expenses = expenses.filter(e => !addedIds.has(e.id));
+        saveExpenses();
+        render();
+      },
+    });
   });
 
   // ---------- Init ----------

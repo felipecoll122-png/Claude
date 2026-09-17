@@ -608,7 +608,7 @@ body { overscroll-behavior-y: none; }
   color: var(--text-primary);
 }
 
-input[type="text"], input[type="date"], select {
+input[type="text"], input[type="date"], select, textarea {
   width: 100%;
   font-size: 15px;
   padding: 11px 12px;
@@ -618,9 +618,24 @@ input[type="text"], input[type="date"], select {
   color: var(--text-primary);
   font-family: inherit;
 }
-input[type="text"]:focus, input[type="date"]:focus, select:focus {
+textarea {
+  resize: vertical;
+  font-size: 13px;
+  line-height: 1.5;
+}
+input[type="text"]:focus, input[type="date"]:focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--cat-comida);
+}
+input[type="file"] {
+  width: 100%;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.import-error {
+  color: var(--critical);
+  margin-top: 0;
 }
 
 .sheet-actions {
