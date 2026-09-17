@@ -16,6 +16,7 @@
     { id: 'compras',       label: 'Compras',       emoji: '🛍️', color: '--cat-compras' },
     { id: 'ahorro',        label: 'Ahorro',        emoji: '🐷', color: '--cat-ahorro' },
     { id: 'inversiones',   label: 'Inversiones',   emoji: '📈', color: '--cat-inversiones' },
+    { id: 'empresa',       label: 'Empresa',       emoji: '💼', color: '--cat-empresa' },
     { id: 'otros',         label: 'Otros',         emoji: '📦', color: '--cat-otros' },
   ];
   const CATEGORY_BY_ID = Object.fromEntries(CATEGORIES.map(c => [c.id, c]));

@@ -24,6 +24,7 @@
   --cat-compras:        #008300;
   --cat-ahorro:         #a16207;
   --cat-inversiones:    #0e7490;
+  --cat-empresa:        #475569;
   --cat-otros:          #e34948;
 }
 
@@ -51,6 +52,7 @@
     --cat-compras:        #008300;
     --cat-ahorro:         #d4a017;
     --cat-inversiones:    #22b8cf;
+    --cat-empresa:        #94a3b8;
     --cat-otros:          #e66767;
   }
 }
