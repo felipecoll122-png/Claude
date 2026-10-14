@@ -44,22 +44,33 @@
 
     <!-- Upload -->
     <section class="card">
-      <h2 class="card-title">Cargar capturas de JCVital</h2>
+      <h2 class="card-title">1. Capturas de JCVital</h2>
       <div class="field-group">
         <label class="field-label" for="dayInput">Día de los datos</label>
         <input type="date" id="dayInput" required />
       </div>
-      <div class="field-group">
+      <div class="field-group" style="margin-bottom:0;">
         <label class="field-label" for="shotsInput">Capturas</label>
         <input type="file" id="shotsInput" accept="image/*" multiple />
-        <p class="field-hint" style="margin-top:8px;">Podés subir varias: resumen, sueño, frecuencia cardíaca, oxígeno, etc.</p>
+        <p class="field-hint" style="margin:8px 0 0;">Podés subir varias: resumen, sueño, frecuencia cardíaca, oxígeno, etc.</p>
       </div>
-      <div id="thumbs" class="thumbs"></div>
+      <div id="thumbs" class="thumbs" style="margin:14px 0 0;"></div>
+    </section>
+
+    <!-- Journal -->
+    <section class="card">
+      <div class="card-title-row">
+        <h2 class="card-title">2. Cuestionario del día</h2>
+        <span class="card-aside">30 segundos</span>
+      </div>
+      <p class="card-intro">Con tus respuestas se puede ver qué hábitos te suben o te bajan la recuperación.</p>
+      <div id="journal" class="journal"></div>
+      <div id="followups"></div>
       <div class="field-group">
-        <label class="field-label" for="noteInput">¿Cómo te sentiste? (opcional)</label>
-        <input type="text" id="noteInput" maxlength="200" placeholder="Ej: dormí mal, entrené piernas, mucho estrés" autocomplete="off" />
+        <label class="field-label" for="noteInput">Algo más (opcional)</label>
+        <input type="text" id="noteInput" maxlength="200" placeholder="Ej: viaje largo, día de mucho trabajo" autocomplete="off" />
       </div>
-      <button type="button" id="analyzeBtn" class="btn btn-primary full" disabled>Analizar</button>
+      <button type="button" id="analyzeBtn" class="btn btn-primary full" disabled>Analizar día</button>
       <p id="analyzeStatus" class="status-line" hidden></p>
     </section>
 
@@ -70,8 +81,40 @@
         <div class="score-ring" id="scoreRing">
           <span id="scoreValue">–</span>
         </div>
-        <div class="hero-label" id="scoreLabel"></div>
+        <div class="hero-label" id="scoreLabel">Recuperación</div>
+        <div class="mini-stats">
+          <div class="mini-stat">
+            <div class="mini-stat-value" id="sleepScore">–</div>
+            <div class="mini-stat-label">Sueño</div>
+          </div>
+          <div class="mini-stat">
+            <div class="mini-stat-value" id="strainScore">–</div>
+            <div class="mini-stat-label">Esfuerzo <span class="muted">/ 21</span></div>
+          </div>
+          <div class="mini-stat">
+            <div class="mini-stat-value" id="sleepDebt">–</div>
+            <div class="mini-stat-label">Deuda de sueño</div>
+          </div>
+        </div>
         <p class="report-summary" id="reportSummary"></p>
+      </section>
+
+      <section class="card">
+        <h2 class="card-title">Tu plan para hoy</h2>
+        <div class="plan-grid">
+          <div class="plan-item">
+            <div class="plan-label">💪 Esfuerzo recomendado</div>
+            <div class="plan-value" id="planStrain">–</div>
+          </div>
+          <div class="plan-item">
+            <div class="plan-label">😴 Sueño que necesitás</div>
+            <div class="plan-value" id="planSleep">–</div>
+          </div>
+          <div class="plan-item">
+            <div class="plan-label">🛏️ Acostate a las</div>
+            <div class="plan-value" id="planBedtime">–</div>
+          </div>
+        </div>
       </section>
 
       <section class="card" id="alertsCard" hidden>
@@ -79,9 +122,14 @@
         <ul id="alertsList" class="plain-list"></ul>
       </section>
 
+      <section class="card" id="trendsCard" hidden>
+        <h2 class="card-title">📈 Lo que dice tu historial</h2>
+        <ul id="trendsList" class="plain-list"></ul>
+      </section>
+
       <section class="card">
-        <h2 class="card-title">Tus números</h2>
-        <div id="metricsGrid" class="metrics-grid"></div>
+        <h2 class="card-title">Consejos para hoy</h2>
+        <ol id="tipsList" class="tips-list"></ol>
       </section>
 
       <section class="card">
@@ -90,18 +138,49 @@
       </section>
 
       <section class="card">
-        <h2 class="card-title">Consejos para hoy</h2>
-        <ol id="tipsList" class="tips-list"></ol>
+        <h2 class="card-title">Tus números</h2>
+        <div id="metricsGrid" class="metrics-grid"></div>
       </section>
 
       <p class="disclaimer">Esto es orientativo y no reemplaza la consulta con un médico.</p>
     </div>
 
+    <!-- Habit impact (computed locally) -->
+    <section class="card">
+      <h2 class="card-title">Impacto de tus hábitos</h2>
+      <p class="card-intro">Cuánto cambia tu recuperación los días que hacés cada cosa, según tus respuestas al cuestionario.</p>
+      <div id="impactList" class="impact-list"></div>
+      <p id="impactEmpty" class="empty-state"></p>
+    </section>
+
+    <!-- History insights (Claude) -->
+    <section class="card">
+      <h2 class="card-title">Conclusiones de tu historial</h2>
+      <p class="card-intro" id="insightsIntro">Claude mira todos tus días juntos y busca patrones: qué te funciona, qué te perjudica y qué cambiar esta semana.</p>
+      <div id="insights" hidden>
+        <p class="insights-date" id="insightsDate"></p>
+        <p class="report-summary" id="insightsSummary" style="text-align:left;margin:0 0 14px;"></p>
+        <div id="insightsFindings" class="eval-list"></div>
+        <div class="insights-cols">
+          <div>
+            <h3 class="sub-title">✅ Te hace bien</h3>
+            <ul id="insightsGood" class="plain-list"></ul>
+          </div>
+          <div>
+            <h3 class="sub-title">❌ Te juega en contra</h3>
+            <ul id="insightsBad" class="plain-list"></ul>
+          </div>
+        </div>
+        <h3 class="sub-title">🎯 Plan para esta semana</h3>
+        <ol id="insightsPlan" class="tips-list"></ol>
+      </div>
+      <button type="button" id="insightsBtn" class="btn btn-ghost full" style="margin-top:14px;">Sacar conclusiones</button>
+      <p id="insightsStatus" class="status-line" hidden></p>
+    </section>
+
     <!-- History -->
     <section class="card">
-      <div class="card-title-row">
-        <h2 class="card-title">Últimos días</h2>
-      </div>
+      <h2 class="card-title">Últimos días</h2>
       <div id="historyChart" class="score-chart"></div>
       <div id="historyList" class="history-list"></div>
       <p id="historyEmpty" class="empty-state">Todavía no analizaste ningún día.</p>
@@ -143,6 +222,11 @@
       <label class="field-label" for="weightInput">Peso (kg)</label>
       <input type="number" id="weightInput" inputmode="decimal" min="30" max="300" step="0.1" />
     </div>
+  </div>
+  <div class="field-group">
+    <label class="field-label" for="wakeInput">¿A qué hora te levantás normalmente?</label>
+    <input type="time" id="wakeInput" />
+    <p class="field-hint" style="margin-top:8px;">Se usa para calcular a qué hora acostarte.</p>
   </div>
   <div class="field-group">
     <label class="field-label" for="goalInput">Tus objetivos</label>

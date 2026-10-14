@@ -42,9 +42,14 @@ Los gastos viven únicamente en el navegador (`localStorage`), por dispositivo. 
 
 ## Mi Salud (pulsera JCVital)
 
-JCVital no tiene una API pública, así que la integración funciona con capturas de pantalla: abrís `salud.html` (el ícono ❤️ arriba en Mis Gastos), subís las capturas del día de la app JCVital y Claude lee los números, los compara con tus días anteriores y te da un puntaje, una evaluación por área (sueño, actividad, corazón, oxígeno, etc.) y consejos para ese día.
+JCVital no tiene una API pública, así que la integración funciona con capturas de pantalla: abrís `salud.html` (el ícono ❤️ arriba en Mis Gastos), subís las capturas del día, respondés un cuestionario corto y Claude analiza todo junto con tu historial.
 
+- **Puntajes al estilo WHOOP:** Recuperación (0–100 %, verde/amarillo/rojo, comparada con tu propio promedio de HRV y FC en reposo), Rendimiento del sueño, Esfuerzo (0–21) y deuda de sueño.
+- **Plan para hoy:** esfuerzo recomendado según tu recuperación, horas de sueño que necesitás y a qué hora acostarte (según la hora a la que te levantás).
+- **Cuestionario diario (como el Journal de WHOOP):** alcohol, entrenamiento, cafeína a la tarde, cena, celular en la cama, siesta, comida, molestias, energía, estrés y ánimo. Claude además puede dejarte 1 o 2 preguntas personalizadas para el día siguiente.
+- **Lo que dice tu historial:** cada análisis diario usa los últimos 14 días para sacar tendencias con números.
+- **Impacto de tus hábitos:** se calcula en el teléfono cuánto cambia tu recuperación los días con y sin cada hábito (aparece con al menos 3 días de cada lado).
+- **Conclusiones de tu historial:** desde los 5 días cargados, Claude revisa hasta 90 días juntos y te dice qué te hace bien, qué te juega en contra y un plan para la semana.
 - **Clave de API:** en el ícono de perfil cargás una clave de la API de Claude (console.anthropic.com → API Keys). Se guarda solo en el navegador de ese dispositivo y se manda únicamente a `api.anthropic.com`. Cada análisis cuesta unos pocos centavos de dólar.
-- **Perfil:** edad, sexo, altura, peso y objetivos (opcionales) para que los consejos sean más personales.
-- **Historial:** se guardan los números y la evaluación de cada día (no las imágenes) en `localStorage`. Se puede exportar en JSON.
+- **Historial:** se guardan los números, las respuestas y las evaluaciones (no las imágenes) en `localStorage`. Se puede exportar en JSON.
 - Es orientativo y no reemplaza la consulta médica.
