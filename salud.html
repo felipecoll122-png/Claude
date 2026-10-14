@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Mi Salud</title>
+<meta name="description" content="Subí la captura de JCVital y recibí tu evaluación y consejos del día." />
+<meta name="theme-color" content="#fcfcfb" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#1a1a19" media="(prefers-color-scheme: dark)" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="icons/icon-180.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="salud.css" />
+</head>
+<body>
+
+<div class="app">
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <a href="index.html" class="icon-btn" aria-label="Volver a Mis Gastos">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+      <h1>Mi Salud</h1>
+    </div>
+    <button id="settingsBtn" class="icon-btn" aria-label="Configuración" aria-haspopup="dialog">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </header>
+
+  <main class="content">
+
+    <div id="keyBanner" class="notice" hidden>
+      Para analizar tus capturas necesitás cargar tu clave de la API de Claude.
+      <button type="button" id="keyBannerBtn" class="link-btn">Configurar</button>
+    </div>
+
+    <div id="todayBanner" class="notice" hidden>
+      📷 Todavía no cargaste la captura de hoy.
+    </div>
+
+    <!-- Upload -->
+    <section class="card">
+      <h2 class="card-title">Cargar capturas de JCVital</h2>
+      <div class="field-group">
+        <label class="field-label" for="dayInput">Día de los datos</label>
+        <input type="date" id="dayInput" required />
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="shotsInput">Capturas</label>
+        <input type="file" id="shotsInput" accept="image/*" multiple />
+        <p class="field-hint" style="margin-top:8px;">Podés subir varias: resumen, sueño, frecuencia cardíaca, oxígeno, etc.</p>
+      </div>
+      <div id="thumbs" class="thumbs"></div>
+      <div class="field-group">
+        <label class="field-label" for="noteInput">¿Cómo te sentiste? (opcional)</label>
+        <input type="text" id="noteInput" maxlength="200" placeholder="Ej: dormí mal, entrené piernas, mucho estrés" autocomplete="off" />
+      </div>
+      <button type="button" id="analyzeBtn" class="btn btn-primary full" disabled>Analizar</button>
+      <p id="analyzeStatus" class="status-line" hidden></p>
+    </section>
+
+    <!-- Report -->
+    <div id="report" hidden>
+      <section class="hero-tile">
+        <div class="hero-label" id="reportDate"></div>
+        <div class="score-ring" id="scoreRing">
+          <span id="scoreValue">–</span>
+        </div>
+        <div class="hero-label" id="scoreLabel"></div>
+        <p class="report-summary" id="reportSummary"></p>
+      </section>
+
+      <section class="card" id="alertsCard" hidden>
+        <h2 class="card-title">⚠️ Para prestar atención</h2>
+        <ul id="alertsList" class="plain-list"></ul>
+      </section>
+
+      <section class="card">
+        <h2 class="card-title">Tus números</h2>
+        <div id="metricsGrid" class="metrics-grid"></div>
+      </section>
+
+      <section class="card">
+        <h2 class="card-title">Evaluación</h2>
+        <div id="evalList" class="eval-list"></div>
+      </section>
+
+      <section class="card">
+        <h2 class="card-title">Consejos para hoy</h2>
+        <ol id="tipsList" class="tips-list"></ol>
+      </section>
+
+      <p class="disclaimer">Esto es orientativo y no reemplaza la consulta con un médico.</p>
+    </div>
+
+    <!-- History -->
+    <section class="card">
+      <div class="card-title-row">
+        <h2 class="card-title">Últimos días</h2>
+      </div>
+      <div id="historyChart" class="score-chart"></div>
+      <div id="historyList" class="history-list"></div>
+      <p id="historyEmpty" class="empty-state">Todavía no analizaste ningún día.</p>
+    </section>
+
+  </main>
+</div>
+
+<!-- Settings sheet -->
+<div id="settingsOverlay" class="overlay" hidden></div>
+<div id="settingsSheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" hidden>
+  <div class="sheet-handle"></div>
+  <h2 id="settingsTitle" class="sheet-title">Configuración</h2>
+  <div class="field-group">
+    <label class="field-label" for="apiKeyInput">Clave de la API de Claude</label>
+    <input type="password" id="apiKeyInput" placeholder="sk-ant-..." autocomplete="off" />
+    <p class="field-hint" style="margin-top:8px;">Se guarda solo en este dispositivo y se usa únicamente para hablar con la API de Anthropic. La sacás en console.anthropic.com → API Keys.</p>
+  </div>
+  <div class="field-row">
+    <div class="field-group grow">
+      <label class="field-label" for="ageInput">Edad</label>
+      <input type="number" id="ageInput" inputmode="numeric" min="10" max="110" />
+    </div>
+    <div class="field-group grow">
+      <label class="field-label" for="sexSelect">Sexo</label>
+      <select id="sexSelect">
+        <option value="">—</option>
+        <option value="hombre">Hombre</option>
+        <option value="mujer">Mujer</option>
+      </select>
+    </div>
+  </div>
+  <div class="field-row">
+    <div class="field-group grow">
+      <label class="field-label" for="heightInput">Altura (cm)</label>
+      <input type="number" id="heightInput" inputmode="numeric" min="100" max="250" />
+    </div>
+    <div class="field-group grow">
+      <label class="field-label" for="weightInput">Peso (kg)</label>
+      <input type="number" id="weightInput" inputmode="decimal" min="30" max="300" step="0.1" />
+    </div>
+  </div>
+  <div class="field-group">
+    <label class="field-label" for="goalInput">Tus objetivos</label>
+    <input type="text" id="goalInput" maxlength="200" placeholder="Ej: dormir mejor, bajar 5 kg, correr 10k" autocomplete="off" />
+  </div>
+  <div class="field-group danger-zone">
+    <label class="field-label">Datos</label>
+    <button type="button" id="exportBtn" class="btn btn-ghost full">Exportar historial (JSON)</button>
+    <button type="button" id="clearBtn" class="btn btn-danger full">Borrar historial de salud</button>
+  </div>
+  <div class="sheet-actions">
+    <button type="button" id="closeSettingsBtn" class="btn btn-primary full">Listo</button>
+  </div>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+
+<script type="module" src="salud.js"></script>
+</body>
+</html>

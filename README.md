@@ -39,3 +39,12 @@ También funciona igual de bien en Netlify, Vercel o Cloudflare Pages arrastrand
 ## Datos
 
 Los gastos viven únicamente en el navegador (`localStorage`), por dispositivo. Para llevarlos a otro lado, usá "Exportar datos (JSON)" en Configuración.
+
+## Mi Salud (pulsera JCVital)
+
+JCVital no tiene una API pública, así que la integración funciona con capturas de pantalla: abrís `salud.html` (el ícono ❤️ arriba en Mis Gastos), subís las capturas del día de la app JCVital y Claude lee los números, los compara con tus días anteriores y te da un puntaje, una evaluación por área (sueño, actividad, corazón, oxígeno, etc.) y consejos para ese día.
+
+- **Clave de API:** en el ícono de perfil cargás una clave de la API de Claude (console.anthropic.com → API Keys). Se guarda solo en el navegador de ese dispositivo y se manda únicamente a `api.anthropic.com`. Cada análisis cuesta unos pocos centavos de dólar.
+- **Perfil:** edad, sexo, altura, peso y objetivos (opcionales) para que los consejos sean más personales.
+- **Historial:** se guardan los números y la evaluación de cada día (no las imágenes) en `localStorage`. Se puede exportar en JSON.
+- Es orientativo y no reemplaza la consulta médica.

@@ -83,6 +83,8 @@ body { overscroll-behavior-y: none; }
   padding: max(16px, env(safe-area-inset-top)) 20px 8px;
 }
 
+.topbar-actions { display: flex; align-items: center; gap: 22px; }
+
 .topbar h1 {
   font-size: 20px;
   font-weight: 700;

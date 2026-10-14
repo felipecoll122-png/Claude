@@ -1,9 +1,12 @@
-const CACHE_NAME = 'mis-gastos-v6';
+const CACHE_NAME = 'mis-gastos-v7';
 const CORE_ASSETS = [
   './',
   './index.html',
   './styles.css',
   './app.js',
+  './salud.html',
+  './salud.css',
+  './salud.js',
   './manifest.webmanifest',
   './icons/icon.svg',
   './icons/icon-180.png',
